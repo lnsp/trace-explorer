@@ -1,5 +1,6 @@
 cramjam==2.5.0
 cycler==0.11.0
+duckdb==0.3.2
 fastparquet==0.8.0
 fonttools==4.29.1
 fsspec==2022.2.0

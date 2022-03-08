@@ -14,6 +14,8 @@ First, you have to convert your data into a common format. We use parquet for st
 python3 -m trace-explorer convert --using myconverter.py --source mydataset/ --output mydatasetcommon.parquet
 ```
 
+To speed up processing, we use [https://duckdb.com](DuckDB) and Parquet for storing intermediate data.
+
 ### Step 1: Find a good preprocessing pipeline
 
 To maximize the possibility of being able to derive conclusions from the data, a good preprocessing pipeline is very necessary. We provide a set of common preprocessing primitives, and allow for automatic tuning by optimizing for global variance.
