@@ -3,7 +3,7 @@ import argparse
 import pandas as pd
 import numpy as np
 
-from . import visualize
+import visualize, join, convert
 
 description = """
 Trace Explorer helps you analyze traces of database management systems.
@@ -21,7 +21,7 @@ parser_convert.add_argument('--destination', help='path to store processed data 
 parser_clean = subparsers.add_parser('clean', description='clean your data by removing outliers, applying scaling, reducing dimensionality and generate synthetic columns.')
 parser_clean.add_argument('--source', help='source dataset to process')
 
-parser_join = subparsers.add_arser('join')
+parser_join = subparsers.add_parser('join')
 parser_join.add_argument('--sources', action='append', help='sources of dataset to join on index')
 
 parser_visualize = subparsers.add_parser('visualize')
@@ -50,9 +50,14 @@ if args.action == 'visualize':
     visualize.visualize(df, labels, clusters, cluster_labels, args.output)
 elif args.action == 'join':
     # read all dfs
-    dfs = [pd.read_parquet(src) for src in args.sources]
-    first = dfs[0]
-    for d in dfs[1:]:
-        first = first.join(d)
-    first.to_parquet(args.output)
-    
+    join.join(args.sources, args.output)
+elif args.action == 'compare':
+    # open datasets
+    # compute PCA, TSNE on concatenated datasets
+    # compute clusters on concatenated datasets
+    # spill out visualization
+    pass
+elif args.action == "convert":
+    # load transformer module
+    m = convert.load_transformer("transformer", args.using)
+    m.transform()
