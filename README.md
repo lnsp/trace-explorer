@@ -11,6 +11,7 @@ flowchart TD
 A[Original dataset] --> |User-specified transformer handling JSON, XML, ...| B[Common parquet format]
 B --> |Specify new columns via SQL| B{Parquet file}
 B --> |Join with other dataset| B
+B --> |Filter outliers or other conditions| B
 B --> |Visualize samples| C[Plot as PDF]
 B --> |Compare with other dataset| C
 ```
