@@ -3,28 +3,28 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-def compute_pca(df, variance_ratio=0.95):
+def compute_pca(df: pd.DataFrame, variance_ratio=0.95):
     X = sklearn.preprocessing.StandardScaler().fit_transform(df)
     return pd.DataFrame(data=sklearn.decomposition.PCA(n_components=variance_ratio).fit_transform(X), index=df.index)
     
-def compute_tsne(df, subset_idx, perplexity=30, n_iter=5000):
+def compute_tsne(df: pd.DataFrame, subset_idx: np.ndarray, perplexity=30, n_iter=5000) -> pd.DataFrame:
     if len(subset_idx) > 100_000:
         raise 'DataFrame subset too large'
-    X = sklearn.manifold.TSNE(perplexity=perplexity, n_iter=n_iter).fit_transform(df[subset_idx])
+    X = sklearn.manifold.TSNE(perplexity=perplexity, n_iter=n_iter).fit_transform(df[df.index.isin(subset_idx)])
     return pd.DataFrame(data=X, index=subset_idx)
 
-def compute_clusters(df, subset_idx, threshold=50):
+def compute_clusters(df: pd.DataFrame, subset_idx: np.ndarray, threshold=50) -> tuple[np.ndarray, np.ndarray]:
     agg = sklearn.cluster.AgglomerativeClustering(n_clusters=None, distance_threshold=threshold)
-    agg.fit(df[subset_idx])
+    agg.fit(df[df.index.isin(subset_idx)])
     labels = agg.labels_
 
     clusters = np.unique(labels)
     return clusters, labels
 
-def filter_column_name(s):
+def filter_column_name(s: str) -> str:
     return s.replace('prof', '').replace('Share', '').replace('Rso', '').replace('Scaled', '')
 
-def label_clusters(df, subset_idx, clusters, labels, top_n_columns=3, filter_column_name=filter_column_name):
+def label_clusters(df: pd.DataFrame, subset_idx: np.ndarray, clusters: np.ndarray, labels: np.ndarray, top_n_columns=3, filter_column_name=filter_column_name) -> list[str]:
     # compute mean, stddev
     cluster_global_mean = df.mean(axis=0)
     cluster_global_std = df.std(axis=0)
@@ -60,7 +60,7 @@ def label_clusters(df, subset_idx, clusters, labels, top_n_columns=3, filter_col
     ]
     return cluster_labels
 
-def visualize(df, df_labels, clusters, cluster_labels, path, figsize=(10, 10)):
+def visualize(df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray, cluster_labels: list[str], path: str, figsize=(10, 10)):
     plt.figure(figsize=figsize)
     for label, text in zip(clusters, cluster_labels):
         c = df[df_labels == label]
