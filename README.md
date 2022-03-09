@@ -6,6 +6,15 @@ This repository contains the source code of Trace Explorer, a toolset to explain
 
 The first step in exploring your measurements is data preparation. Trace Explorer assist you in a multitude of ways, by automatically exploring different strategies to maximize dataset variance.
 
+```mermaid
+flowchart TD
+A[Original dataset] --> |User-specified transformer handling JSON, XML, ...| B[Common parquet format]
+B --> |Specify new columns via SQL| B{Parquet file}
+B --> |Join with other dataset| B
+B --> |Visualize samples| C[Plot as PDF]
+B --> |Compare with other dataset| C
+```
+
 ### Step 0: Converting the data into a common format
 
 First, you have to convert your data into a common format. We use parquet for storing datasets because of its widespread compatibility and integrated compression. Each measurement must be converted into one row in the common dataset format. We provide the `CommonTraceConverter` interface to allow users to provide their own format converter. You can find examples for Snowset, Snowflake profiles, MSSQL and PostgreSQL in our `converter/` directory.
