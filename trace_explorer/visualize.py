@@ -4,16 +4,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def compute_pca(df: pd.DataFrame, variance_ratio=0.95):
+    """Apply standard scaling and PCA decomposition to the given dataset
+    while retaining variance by at least the specified ratio."""
     X = sklearn.preprocessing.StandardScaler().fit_transform(df)
     return pd.DataFrame(data=sklearn.decomposition.PCA(n_components=variance_ratio).fit_transform(X), index=df.index)
     
 def compute_tsne(df: pd.DataFrame, subset_idx: np.ndarray, perplexity=30, n_iter=5000) -> pd.DataFrame:
+    """Compute a 2-dimensional embedding of the given subset of data."""
     if len(subset_idx) > 100_000:
         raise 'DataFrame subset too large'
     X = sklearn.manifold.TSNE(perplexity=perplexity, n_iter=n_iter).fit_transform(df[df.index.isin(subset_idx)])
     return pd.DataFrame(data=X, index=subset_idx)
 
 def compute_clusters(df: pd.DataFrame, subset_idx: np.ndarray, threshold=50) -> tuple[np.ndarray, np.ndarray]:
+    """Find clusters using ward-linkage hierarchical clustering and returns a list of clusters and labels."""
     agg = sklearn.cluster.AgglomerativeClustering(n_clusters=None, distance_threshold=threshold)
     agg.fit(df[df.index.isin(subset_idx)])
     labels = agg.labels_
@@ -21,10 +25,11 @@ def compute_clusters(df: pd.DataFrame, subset_idx: np.ndarray, threshold=50) -> 
     clusters = np.unique(labels)
     return clusters, labels
 
-def filter_column_name(s: str) -> str:
+def _filter_column_name(s: str) -> str:
     return s.replace('prof', '').replace('Share', '').replace('Rso', '').replace('Scaled', '')
 
-def label_clusters(df: pd.DataFrame, subset_idx: np.ndarray, clusters: np.ndarray, labels: np.ndarray, top_n_columns=3, filter_column_name=filter_column_name) -> list[str]:
+def label_clusters(df: pd.DataFrame, subset_idx: np.ndarray, clusters: np.ndarray, labels: np.ndarray, top_n_columns=3, filter_column_name=_filter_column_name) -> list[str]:
+    """Label clusters using data subset by computing Z-score of cluster column means and ranking them."""
     # compute mean, stddev
     cluster_global_mean = df.mean(axis=0)
     cluster_global_std = df.std(axis=0)
@@ -32,6 +37,8 @@ def label_clusters(df: pd.DataFrame, subset_idx: np.ndarray, clusters: np.ndarra
     # compute cluster zscores
     cluster_means = []
     cluster_zscores = []
+
+    # determine variance within 
 
     for i in clusters:
         idx = df.index.isin(subset_idx[labels == i])
