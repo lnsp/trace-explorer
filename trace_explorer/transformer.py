@@ -2,10 +2,10 @@ from abc import abstractmethod
 
 class Transformer(object):
     @abstractmethod
-    def columns() -> list[str]:
-        return ['scan', 'filter']
+    def columns(self) -> list[str]:
+        pass
 
 
     @abstractmethod
-    def transform(filename: str, line: str) -> list:
+    def transform(self, content: str) -> list:
         pass

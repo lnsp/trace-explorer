@@ -1,5 +1,6 @@
 import argparse
 
+import os
 import pandas as pd
 import numpy as np
 
@@ -14,9 +15,9 @@ parser = argparse.ArgumentParser(prog='trace-explorer', description=description)
 subparsers = parser.add_subparsers(dest='action', title='actions')
 
 parser_convert = subparsers.add_parser('convert', description='converts your trace into the common trace format.')
-parser_convert.add_argument('--source', help='source dataset to process')
-parser_convert.add_argument('--using', help='dataset transformer')
-parser_convert.add_argument('--destination', help='path to store processed data at')
+parser_convert.add_argument('--source', help='source dataset to process', required=True)
+parser_convert.add_argument('--using', help='dataset transformer', required=True)
+parser_convert.add_argument('--destination', help='path to store processed data at', required=True)
 
 parser_clean = subparsers.add_parser('clean', description='clean your data by removing outliers, applying scaling, reducing dimensionality and generate synthetic columns.')
 parser_clean.add_argument('--source', help='source dataset to process')
@@ -59,5 +60,11 @@ elif args.action == 'compare':
     pass
 elif args.action == "convert":
     # load transformer module
-    m = convert.load_transformer("transformer", args.using)
-    m.transform()
+    tf = convert.load_transformer("convert_plugin", args.using)
+    cols = tf.columns()
+    files = convert.find_dataset(args.source)
+    if len(files) == 0:
+        print('no files found')
+        os.exit(1)
+    # pipe files through transformer
+    convert.to_parquet(tf, files, args.destination)
