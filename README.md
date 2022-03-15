@@ -46,8 +46,11 @@ class Transformer(trace_explorer.Transformer):
 
 To maximize the possibility of being able to derive conclusions from the data, a good preprocessing pipeline is very necessary. We provide a set of common preprocessing primitives, and allow for automatic tuning by optimizing for global variance.
 
-To speed up processing, we use [https://duckdb.com](DuckDB) and Parquet for storing intermediate data.
+To speed up processing, we use [DuckDB](https://duckdb.com) and Parquet for storing intermediate data.
 
 ```bash
-trace_explorer clean -z 5 --source mydataset.parquet --output mydataset_cleaned.parquet
+# Clean up the dataset by dropping entries with ANY column abs zscore > 5
+trace_explorer clean --zscore 5 --source mydataset.parquet --output mydataset_cleaned.parquet
+# Add a new generated column from existing data
+trace_explorer generate --name execTimeLog --source mydataset.parquet --select 'log(1 + execTime)'
 ```
