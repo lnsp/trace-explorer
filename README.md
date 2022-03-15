@@ -21,7 +21,7 @@ B --> |Compare with other dataset| C
 First, you have to convert your data into a common format. We use parquet for storing datasets because of its widespread compatibility and integrated compression. Each measurement must be converted into one row in the common dataset format. We provide the `CommonTraceConverter` interface to allow users to provide their own format converter. You can find examples for Snowset, Snowflake profiles, MSSQL and PostgreSQL in our `converter/` directory.
 
 ```bash
-python3 -m trace-explorer convert --using myconverter.py --source mydataset/ --output mydatasetcommon.parquet
+trace_explorer convert --using myconverter.py --source 'mydataset/*.merged' --output mydatasetcommon.parquet
 ```
 
 The provided transformer has to export a single class called `Transformer` implementing the `trace_explorer.Transformer` abstract class.
@@ -47,3 +47,7 @@ class Transformer(trace_explorer.Transformer):
 To maximize the possibility of being able to derive conclusions from the data, a good preprocessing pipeline is very necessary. We provide a set of common preprocessing primitives, and allow for automatic tuning by optimizing for global variance.
 
 To speed up processing, we use [https://duckdb.com](DuckDB) and Parquet for storing intermediate data.
+
+```bash
+trace_explorer clean -z 5 --source mydataset.parquet --output mydataset_cleaned.parquet
+```
