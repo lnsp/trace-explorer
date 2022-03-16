@@ -14,6 +14,10 @@ It allows you to convert your trace into a common format, clean and optimize you
 parser = argparse.ArgumentParser(prog='trace-explorer', description=description)
 subparsers = parser.add_subparsers(dest='action', title='actions')
 
+parser_stats = subparsers.add_parser('stats', description='print useful stats about the dataset')
+parser_stats.add_argument('--source', help='source dataset to process', required=True)
+
+
 parser_convert = subparsers.add_parser('convert', description='converts your trace into the common trace format.')
 parser_convert.add_argument('--source', help='source dataset to process', required=True)
 parser_convert.add_argument('--using', help='dataset transformer', required=True)

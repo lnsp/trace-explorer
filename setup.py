@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
+import setuptools
 
-setup(name='trace_explorer',
+setuptools.setup(name='trace_explorer',
       version='1.0',
       description=['Database trace explorer toolset'],
       author='Lennart Espe',

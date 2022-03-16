@@ -1,4 +1,4 @@
-from sklearn import preprocessing, decomposition, manifold, cluster
+from sklearn import preprocessing, decomposition, manifold, cluster, ensemble
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -73,6 +73,11 @@ def label_clusters(df: pd.DataFrame, subset_idx: np.ndarray, clusters: np.ndarra
         ) for i in range(len(clusters))
     ]
     return cluster_labels
+
+def generalize_clusters(df: pd.DataFrame, df_labels: np.ndarray):
+    model = ensemble.RandomForestClassifier()
+    model.fit(df, df_labels)
+    return model
 
 def visualize(df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray, cluster_labels: list[str], path: str, figsize=(10, 10)):
     plt.figure(figsize=figsize)
