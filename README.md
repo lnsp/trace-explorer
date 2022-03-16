@@ -51,6 +51,10 @@ To speed up processing, we use [DuckDB](https://duckdb.com) and Parquet for stor
 ```bash
 # Clean up the dataset by dropping entries with ANY column abs zscore > 5
 trace_explorer clean --zscore 5 --source mydataset.parquet --output mydataset_cleaned.parquet
+
 # Add a new generated column from existing data
-trace_explorer generate --name execTimeLog --source mydataset.parquet --select 'log(1 + execTime)'
+trace_explorer generate --columns execTimeLog --source mydataset.parquet --query 'select log(1 + execTime) from dataset'
+
+# Only keep read-only queries
+trace_explorer generate --source mydataset.parquet --query 'select * from dataset where writtenBytes = 0'
 ```
