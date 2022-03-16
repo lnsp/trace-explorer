@@ -58,3 +58,14 @@ trace_explorer generate --columns execTimeLog --source mydataset.parquet --query
 # Only keep read-only queries
 trace_explorer generate --source mydataset.parquet --query 'select * from dataset where writtenBytes = 0'
 ```
+
+### Step 2: Visualize your dataset
+
+To make the most sense of your trace, you probably want to visualize your dataset. Trace Explorer supports clustering, auto-labeling and visualizing dataset clusters by
+
+- performing clustering on a transformed subset of your original dataset
+- auto-labeling the discovered clusters
+- plotting them in a 2D scatter plot using a TSNE embedding
+- (optional) training a tree classifier to cluster entire dataset
+
+### Step 3: Compare different traces
