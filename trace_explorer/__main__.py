@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import numpy as np
 
-import visualize, join, convert
+import visualize, join, convert, clean
 
 description = """
 Trace Explorer helps you analyze traces of database management systems.
@@ -23,6 +23,12 @@ parser_clean = subparsers.add_parser('clean', description='clean your data by re
 parser_clean.add_argument('--source', help='source dataset to process', required=True)
 parser_clean.add_argument('--generate', help='generate a new column based on the given query')
 parser_clean.add_argument('--generate_query', help='query to use for column generation')
+
+parser_generate = subparsers.add_parser('generate', description='generate new columns from the existing dataset')
+parser_generate.add_argument('--source', help='source dataset to process', required=True)
+parser_generate.add_argument('--columns', help='names to be assigned to the query output', default=[], action='append', required=True)
+parser_generate.add_argument('--query', help='query to generate columns (select from dataset)', required=True)
+parser_generate.add_argument('--output', help='destination for processed dataset')
 
 parser_join = subparsers.add_parser('join')
 parser_join.add_argument('--sources', action='append', help='sources of dataset to join on index')
@@ -56,6 +62,10 @@ if args.action == 'visualize':
     clusters, labels = visualize.compute_clusters(df_pcad, sample, threshold=args.threshold)
     cluster_labels = visualize.label_clusters(df, sample, clusters, labels)
     visualize.visualize(df_tsne, labels, clusters, cluster_labels, args.output)
+elif args.action == 'generate':
+    df = pd.read_parquet(args.source)
+    df = clean.generate_columns(df, args.columns, args.query)
+    df.to_parquet(args.output if args.output else args.source)
 elif args.action == 'join':
     # read all dfs
     join.join(args.sources, args.output)
