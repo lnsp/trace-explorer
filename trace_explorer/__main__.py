@@ -25,6 +25,9 @@ parser_convert.add_argument('--destination', help='path to store processed data 
 
 parser_clean = subparsers.add_parser('clean', description='clean your data by removing outliers, applying scaling, reducing dimensionality and generate synthetic columns.')
 parser_clean.add_argument('--source', help='source dataset to process', required=True)
+parser_clean.add_argument('--zscore', help='max zscore to filter', default=3, required=True)
+parser_clean.add_argument('--output', help='destination to store filtered datasets')
+parser_clean.add_argument('--exclude', help='exclude columns from filtering', action='append', default=[])
 
 parser_generate = subparsers.add_parser('generate', description='generate new columns from the existing dataset')
 parser_generate.add_argument('--source', help='source dataset to process', required=True)
@@ -77,6 +80,10 @@ elif args.action == 'compare':
     # compute clusters on concatenated datasets
     # spill out visualization
     pass
+elif args.action == 'clean':
+    df = pd.read_parquet(args.source)
+    df = preprocess.filter_by_zscore(df, args.zscore, args.exclude)
+    df.to_parquet(args.output if args.output is not None else args.source)
 elif args.action == "convert":
     # load transformer module
     tf = convert.load_transformer("convert_plugin", args.using)
