@@ -53,10 +53,10 @@ To speed up processing, we use [DuckDB](https://duckdb.com) and Parquet for stor
 trace_explorer clean --zscore 5 --source mydataset.parquet --output mydataset_cleaned.parquet
 
 # Add a new generated column from existing data
-trace_explorer generate --columns execTimeLog --source mydataset.parquet --query 'select log(1 + execTime) from dataset'
+trace_explorer generate --source mydataset.parquet --query 'select log(1 + execTime) as execTimeLog from dataset'
 
 # Only keep read-only queries
-trace_explorer generate --source mydataset.parquet --query 'select * from dataset where writtenBytes = 0'
+trace_explorer generate --source mydataset.parquet --no_copy --query 'select * from dataset where writtenBytes = 0'
 ```
 
 ### Step 2: Visualize your dataset
