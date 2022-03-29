@@ -69,3 +69,12 @@ To make the most sense of your trace, you probably want to visualize your datase
 - (optional) training a tree classifier to cluster entire dataset
 
 ### Step 3: Compare different traces
+
+Finding a good way to compare cluster traces is difficult. A good approach when operating on a common or subset/superset feature space is to
+
+- either limit the feature superset to the feature subset OR use a good imputation strategy to generate the missing columns
+- concatenate both datasets
+- take a subset of data to cluster via agglomerative clustering
+- use a random forest classifier to 'learn' the classification
+- apply classification to a larger set of data, compute visualization for that as well
+- visualize large set of data with trained classification
