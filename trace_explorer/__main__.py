@@ -51,7 +51,8 @@ parser_visualize.add_argument('--top_n', help='show top N outlier columns', defa
 
 parser_compare = subparsers.add_parser('compare')
 parser_compare.add_argument('--sources', action='append', help='list of source datasets to process')
-parser_compare.add_argument('--output', default='joined.parquet', help='destination to save joined dataset at')
+parser_compare.add_argument('--output', default='plot.pdf')
+parser_compare.add_argument('--method', choices=['subset', 'impute'])
 
 parser.add_argument('-v', '--verbose', help='increase output verbosity')
 args = parser.parse_args()
@@ -82,6 +83,7 @@ elif args.action == 'join':
     join.join(args.sources, args.output)
 elif args.action == 'compare':
     # open datasets
+    dfs = [pd.read_parquet(src) for src in args.sources]
     # compute PCA, TSNE on concatenated datasets
     # compute clusters on concatenated datasets
     # spill out visualization
