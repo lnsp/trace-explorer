@@ -40,7 +40,7 @@ def compute_clusters(df: pd.DataFrame, subset_idx: np.ndarray, threshold=50) -> 
 def _filter_column_name(s: str) -> str:
     return s.replace('prof', '').replace('Share', '').replace('Rso', '').replace('Scaled', '')
 
-def label_clusters(df: pd.DataFrame, subset_idx: np.ndarray, clusters: np.ndarray, labels: np.ndarray, top_n_columns=3, filter_column_name=_filter_column_name) -> list[str]:
+def label_clusters(df: pd.DataFrame, subset_idx: np.ndarray, clusters: np.ndarray, labels: np.ndarray, top_n_columns=3, filter_column_name=_filter_column_name, target=None) -> list[str]:
     """Label clusters using data subset by computing Z-score of cluster column means and ranking them."""
     # compute mean, stddev
     cluster_global_mean = df.mean(axis=0)
@@ -65,6 +65,10 @@ def label_clusters(df: pd.DataFrame, subset_idx: np.ndarray, clusters: np.ndarra
     for i in range(len(clusters)):
         row = np.abs(cluster_zscores)[i]
         cluster_cols.append(sorted(range(len(df.columns)), key=lambda x: row[x] if not math.isnan(row[x]) else 0, reverse=True))
+    
+    target_labels = None
+    if target is not None:
+        target_labels = {i: set(target[labels == i]) for i in clusters}
 
     # generate labels
     cluster_labels = [
@@ -74,7 +78,8 @@ def label_clusters(df: pd.DataFrame, subset_idx: np.ndarray, clusters: np.ndarra
                 cluster_zscores[i][j],
                 filter_column_name(df.columns[j]))
             for j in cluster_cols[i][:top_n_columns]
-        ) for i in range(len(clusters))
+        ) + ('' if target_labels is None else str(target_labels[i]))
+        for i in range(len(clusters))
     ]
     return cluster_labels
 
@@ -83,11 +88,15 @@ def generalize_clusters(df: pd.DataFrame, df_labels: np.ndarray):
     model.fit(df, df_labels)
     return model
 
-def visualize(df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray, cluster_labels: list[str], path: str, figsize=(10, 10)):
+def visualize(df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray, cluster_labels: list[str], path: str, figsize=(10, 10), label_graph=False):
     plt.figure(figsize=figsize)
+    cm = plt.get_cmap('gnuplot')
     for label, text in zip(clusters, cluster_labels):
         c = df[df_labels == label]
-        plt.scatter(c[0], c[1], c=[plt.cm.tab20(label)] * len(c), s=2, label=text)
+        plt.scatter(c[0], c[1], c=[cm(label / max(clusters))] * len(c), s=2, label=text)
+        if label_graph:
+            m = c.median()
+            plt.text(m[0], m[1], str(label), weight='bold')
     lgd = plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
               fancybox=False, shadow=False, ncol=2)
     for i in range(len(lgd.legendHandles)):

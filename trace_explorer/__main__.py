@@ -46,6 +46,8 @@ parser_visualize.add_argument('--perplexity', default=30, help='perplexity for T
 parser_visualize.add_argument('--n_iter', default=5000, help='number of iterations for TSNE', type=int)
 parser_visualize.add_argument('--output', default='plot.pdf', help='destination for plot pdf')
 parser_visualize.add_argument('--exclude', help='exclude columns from processing', action='append', default=[])
+parser_visualize.add_argument('--target', help='display classification target')
+parser_visualize.add_argument('--top_n', help='show top N outlier columns', default=2, type=int)
 
 parser_compare = subparsers.add_parser('compare')
 parser_compare.add_argument('--sources', action='append', help='list of source datasets to process')
@@ -59,13 +61,17 @@ if args.action == 'visualize':
     df = pd.read_parquet(args.source)
     if args.size == 0:
         args.size = len(df)
+    sample = np.random.choice(df.index, size=args.size, replace=False)
+    # get target series
+    target_series = None
+    if args.target:
+        target_series = df[df.index.isin(sample)][args.target]
     # exclude columns
     df = df[list(set(df.columns) - set(args.exclude))]
-    sample = np.random.choice(df.index, size=args.size, replace=False)
     df_pcad = visualize.compute_pca(df)
     df_tsne = visualize.compute_tsne(df_pcad, sample, perplexity=args.perplexity, n_iter=args.n_iter)
     clusters, labels = visualize.compute_clusters(df_pcad, sample, threshold=args.threshold)
-    cluster_labels = visualize.label_clusters(df, sample, clusters, labels)
+    cluster_labels = visualize.label_clusters(df, sample, clusters, labels, target=target_series, top_n_columns=args.top_n)
     visualize.visualize(df_tsne, labels, clusters, cluster_labels, args.output)
 elif args.action == 'generate':
     df = pd.read_parquet(args.source)
