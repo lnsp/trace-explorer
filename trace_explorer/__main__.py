@@ -50,9 +50,12 @@ parser_visualize.add_argument('--target', help='display classification target')
 parser_visualize.add_argument('--top_n', help='show top N outlier columns', default=2, type=int)
 
 parser_compare = subparsers.add_parser('compare')
-parser_compare.add_argument('--sources', action='append', help='list of source datasets to process')
+parser_compare.add_argument('--superset', action='append', help='superset to compare to')
+parser_compare.add_argument('--subset', action='append', help='subset to compare to')
 parser_compare.add_argument('--output', default='plot.pdf')
 parser_compare.add_argument('--method', choices=['subset', 'impute'])
+parser_compare.add_argument('--exclude_superset', action='append', default=[], help='list of columns to exclude from superset')
+parser_compare.add_argument('--exclude_subset', action='append', default=[], help='list of columns to exclude from subset')
 
 parser.add_argument('-v', '--verbose', help='increase output verbosity')
 args = parser.parse_args()
