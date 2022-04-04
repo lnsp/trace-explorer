@@ -78,3 +78,4 @@ Finding a good way to compare cluster traces is difficult. A good approach when 
 - use a random forest classifier to 'learn' the classification
 - apply classification to a larger set of data, compute visualization for that as well
 - visualize large set of data with trained classification
+

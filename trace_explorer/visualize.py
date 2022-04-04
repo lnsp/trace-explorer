@@ -90,10 +90,9 @@ def generalize_clusters(df: pd.DataFrame, df_labels: np.ndarray):
 
 def visualize(df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray, cluster_labels: list[str], path: str, figsize=(10, 10), label_graph=False):
     plt.figure(figsize=figsize)
-    cm = plt.get_cmap('gnuplot')
     for label, text in zip(clusters, cluster_labels):
         c = df[df_labels == label]
-        plt.scatter(c[0], c[1], c=[cm(label / max(clusters))] * len(c), s=2, label=text)
+        plt.scatter(c[0], c[1], c=[plt.cm.tab20(label)] * len(c), s=2, label=text)
         if label_graph:
             m = c.median()
             plt.text(m[0], m[1], str(label), weight='bold')

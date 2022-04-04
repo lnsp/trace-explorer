@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import numpy as np
 
-import visualize, join, convert, preprocess
+import visualize, join, convert, preprocess, compare
 
 description = """
 Trace Explorer helps you analyze traces of database management systems.
@@ -51,11 +51,12 @@ parser_visualize.add_argument('--top_n', help='show top N outlier columns', defa
 
 parser_compare = subparsers.add_parser('compare')
 parser_compare.add_argument('--superset', action='append', help='superset to compare to')
+parser_compare.add_argument('--superset_sample', default=None, type=int, help='number of samples to take from superset')
 parser_compare.add_argument('--subset', action='append', help='subset to compare to')
 parser_compare.add_argument('--output', default='plot.pdf')
-parser_compare.add_argument('--method', choices=['subset', 'impute'])
+parser_compare.add_argument('--method', choices=['limit', 'impute'], default='limit')
 parser_compare.add_argument('--exclude_superset', action='append', default=[], help='list of columns to exclude from superset')
-parser_compare.add_argument('--exclude_subset', action='append', default=[], help='list of columns to exclude from subset')
+parser_compare.add_argument('--exclude_subset', '--exclude', action='append', default=[], help='list of columns to exclude from subset')
 
 parser.add_argument('-v', '--verbose', help='increase output verbosity')
 args = parser.parse_args()
@@ -85,12 +86,16 @@ elif args.action == 'join':
     # read all dfs
     join.join(args.sources, args.output)
 elif args.action == 'compare':
-    # open datasets
-    dfs = [pd.read_parquet(src) for src in args.sources]
-    # compute PCA, TSNE on concatenated datasets
-    # compute clusters on concatenated datasets
-    # spill out visualization
-    pass
+    superset = pd.read_parquet(args.superset)
+    subset = pd.read_parquet(args.subset)
+
+    if args.superset_sample:
+        superset = superset.sample(n=args.superset_sample)
+    
+    if args.method == 'limit':
+        compare.by_limiting_columns(superset, subset, args.exclude_subset, args.output)
+    elif args.method == 'impute':
+        compare.by_imputing_columns(superset, subset, args.exclude_superset, args.exclude_subset, args.output)
 elif args.action == 'clean':
     df = pd.read_parquet(args.source)
     df = preprocess.filter_by_zscore(df, args.zscore, args.exclude)
@@ -105,3 +110,8 @@ elif args.action == "convert":
         os.exit(1)
     # pipe files through transformer
     convert.to_parquet(tf, files, args.destination)
+elif args.action == 'stats':
+    # print out df stats
+    df = pd.read_parquet(args.source)
+    print(df.describe())
+    print(df.columns)
