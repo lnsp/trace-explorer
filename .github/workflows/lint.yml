@@ -33,5 +33,5 @@ jobs:
       - name: Upload wheel
         uses: actions/upload-artifact@v2
         with:
-          name: trace_explorer
-          path: valar_darwin_arm64
+          name: wheels
+          path: dist/
