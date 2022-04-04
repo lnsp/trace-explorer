@@ -1,7 +1,7 @@
 import importlib
 import glob
 import pandas as pd
-import transformer
+from trace_explorer import transformer
 
 def load_transformer(name, path):
    spec = importlib.util.spec_from_file_location(name, path)

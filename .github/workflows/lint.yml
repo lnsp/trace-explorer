@@ -1,4 +1,4 @@
-name: Lint & test
+name: Lint & build
 
 on: [push]
 
@@ -30,3 +30,8 @@ jobs:
       - name: Build wheel
         run: |
           python3 setup.py bdist_wheel
+      - name: Upload wheel
+        uses: actions/upload-artifact@v2
+        with:
+          name: trace_explorer
+          path: valar_darwin_arm64

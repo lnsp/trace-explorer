@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import numpy as np
 
-import visualize, join, convert, preprocess, compare
+from trace_explorer import visualize, join, convert, preprocess, compare
 
 description = """
 Trace Explorer helps you analyze traces of database management systems.
