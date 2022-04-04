@@ -11,10 +11,6 @@ def numeric_subset(df: pd.DataFrame):
             numeric_columns.append(col)
     return df[numeric_columns]
 
-def test_numeric_subset():
-    df = pd.DataFrame([[123, 1.0, "Hello"]])
-    assert np.array_equal(numeric_subset(df).to_numpy(), np.array([[1.0, 1.0]]))
-
 def compute_pca(df: pd.DataFrame, variance_ratio=0.95):
     """Apply standard scaling and PCA decomposition to the given dataset
     while retaining variance by at least the specified ratio."""
