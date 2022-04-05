@@ -56,10 +56,11 @@ stat_cols = sorted([
     'scheduleTime',
 ])
 
+
 class Transformer(transformer.Transformer):
     def columns(self):
         return ['queryNumber', 'queryId'] + stat_cols + op_cols
-    
+
     def transform(self, content):
         # expect merged metadata file
         obj = json.loads(content)
@@ -69,7 +70,10 @@ class Transformer(transformer.Transformer):
         profile_json = json.loads(obj['profile'])
 
         info_stats = info_json['data']['queries'][0]['stats']
-        query_stats = [queryNumber, info_json['data']['queries'][0]['id']] + [info_stats[stat_map[c]] for c in stat_cols]
+        query_stats = [
+            queryNumber,
+            info_json['data']['queries'][0]['id']
+        ] + [info_stats[stat_map[c]] for c in stat_cols]
 
         # compute total execution time
         total_time = 0.0
@@ -77,9 +81,9 @@ class Transformer(transformer.Transformer):
         for step in profile_json['data']['steps']:
             total_time += step['graphData']['global']['totalStats']['value']
             for node in step['graphData']['nodes']:
-                operator_time['prof%sRsoShare' % op_map[node['name']]] += node['totalStats']['value']
+                operator_time['prof%sRsoShare' % op_map[node['name']]] += \
+                    node['totalStats']['value']
 
         # normalize operator time
         profile_shares = [operator_time[c] / total_time for c in op_cols]
         return query_stats + profile_shares
-

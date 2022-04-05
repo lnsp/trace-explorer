@@ -1,6 +1,4 @@
 import xml.etree.ElementTree as ET
-import numpy as np
-import pandas as pd
 from collections import defaultdict
 import transformer
 
@@ -20,13 +18,15 @@ op_keywords = {
     'Segment': 'Agg',
     'Union': 'Hj'
 }
-rel_op_tag = '{http://schemas.microsoft.com/sqlserver/2004/07/showplan}RelOp'
-runtime_tag = '{http://schemas.microsoft.com/sqlserver/2004/07/showplan}RunTimeInformation'
-runtime_info_tag = '{http://schemas.microsoft.com/sqlserver/2004/07/showplan}RunTimeCountersPerThread'
+schema_base = '{http://schemas.microsoft.com/sqlserver/2004/07/showplan}'
+rel_op_tag = schema_base + 'RelOp'
+runtime_tag = schema_base + 'RunTimeInformation'
+runtime_info_tag = schema_base + 'RunTimeCountersPerThread'
 
-columns = ['queryNumber', 'profAggRsoShare', 'profBufRsoShare', 'profFilterRsoShare',
-       'profHjRsoShare', 'profOtherRsoShare', 'profProjRsoShare',
-       'profResRsoShare', 'profScanRsoShare', 'profSortRsoShare']
+columns = [
+    'queryNumber', 'profAggRsoShare', 'profBufRsoShare', 'profFilterRsoShare',
+    'profHjRsoShare', 'profOtherRsoShare', 'profProjRsoShare',
+    'profResRsoShare', 'profScanRsoShare', 'profSortRsoShare']
 
 
 class Transformer(transformer.Transformer):
@@ -44,7 +44,7 @@ class Transformer(transformer.Transformer):
                     logical_op = op_keywords[k]
             logical_op = 'prof%sRsoShare' % logical_op
             rt_inf = tt.find('./' + runtime_tag)
-            if rt_inf == None:
+            if rt_inf is None:
                 continue
             total_time = []
             for st in rt_inf.findall('./' + runtime_info_tag):

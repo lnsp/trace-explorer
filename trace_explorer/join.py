@@ -1,6 +1,11 @@
 import pandas as pd
 
+
 def join(sources: list[str], output: str):
+    """
+    Join joins the list of sources based on the index.
+    """
+
     dfs = [
         pd.read_parquet(src)
         for src in sources
@@ -9,4 +14,3 @@ def join(sources: list[str], output: str):
     for item in items:
         df = df.join(item)
     df.to_parquet(output)
-
