@@ -2,6 +2,14 @@
 
 This repository contains the source code of Trace Explorer, a toolset to explain and visualize database workload traces and benchmark datapoints.
 
+## Installation
+
+Go to [the latest Build & Lint workflow](https://github.com/lnsp/trace-explorer/actions/workflows/lint.yml) and download the latest `trace-explorer.zip` under the *Artifacts* section. The ZIP file contains a wheel file installable via
+
+```bash
+pip install trace_explorer-1.0-py3-none-any.whl
+```
+
 ## Usage
 
 The first step in exploring your measurements is data preparation. Trace Explorer assist you in a multitude of ways, by automatically exploring different strategies to maximize dataset variance.
@@ -16,7 +24,7 @@ B --> |Visualize samples| C[Plot as PDF]
 B --> |Compare with other dataset| C
 ```
 
-### Step 0: Converting the data into a common format
+### Step 1: Turning the raw data into a parquet table
 
 First, you have to convert your data into a common format. We use parquet for storing datasets because of its widespread compatibility and integrated compression. Each measurement must be converted into one row in the common dataset format. We provide the `CommonTraceConverter` interface to allow users to provide their own format converter. You can find examples for Snowset, Snowflake profiles, MSSQL and PostgreSQL in our `converter/` directory.
 
@@ -42,7 +50,7 @@ class Transformer(trace_explorer.Transformer):
         return [obj['rsoScan'] / sum, obj['rsoFilter'] / sum]
 ```
 
-### Step 1: Find a good preprocessing pipeline
+### Step 2: Find a good preprocessing pipeline
 
 To maximize the possibility of being able to derive conclusions from the data, a good preprocessing pipeline is very necessary. We provide a set of common preprocessing primitives, and allow for automatic tuning by optimizing for global variance.
 
@@ -57,9 +65,12 @@ trace_explorer generate --source mydataset.parquet --query 'select log(1 + execT
 
 # Only keep read-only queries
 trace_explorer generate --source mydataset.parquet --no_copy --query 'select * from dataset where writtenBytes = 0'
+
+# Print out useful dataset stats
+trace_explorer stats --source mydataset.parquet
 ```
 
-### Step 2: Visualize your dataset
+### Step 3: Visualize your dataset
 
 To make the most sense of your trace, you probably want to visualize your dataset. Trace Explorer supports clustering, auto-labeling and visualizing dataset clusters by
 
@@ -68,7 +79,12 @@ To make the most sense of your trace, you probably want to visualize your datase
 - plotting them in a 2D scatter plot using a TSNE embedding
 - (optional) training a tree classifier to cluster entire dataset
 
-### Step 3: Compare different traces
+```bash
+# Generate a plot with auto-labeled clusters
+trace_explorer visualize --source mydataset.parquet --threshold 5
+```
+
+### Step 4: Compare different traces
 
 Finding a good way to compare cluster traces is difficult. A good approach when operating on a common or subset/superset feature space is to
 
