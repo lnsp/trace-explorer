@@ -95,3 +95,7 @@ Finding a good way to compare cluster traces is difficult. A good approach when 
 - apply classification to a larger set of data, compute visualization for that as well
 - visualize large set of data with trained classification
 
+```bash
+# Compare both datasets in a single visualization
+trace_explorer compare --superset dataset1.parquet --subset dataset2.parquet --exclude badcolumns
+```
