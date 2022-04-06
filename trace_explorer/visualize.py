@@ -127,7 +127,12 @@ def visualize(df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray,
     plt.figure(figsize=figsize)
     for label, text in zip(clusters, cluster_labels):
         c = df[df_labels == label]
-        plt.scatter(c[0], c[1], c=[plt.cm.tab20(label)] * len(c),
+        # choose color scheme based on number of labels
+        if len(clusters) <= 20:
+            color = plt.cm.tab20(label)
+        else:
+            color = plt.cm.get_cmap('hsv')(label / len(clusters))
+        plt.scatter(c[0], c[1], c=[color] * len(c),
                     s=2, label=text)
         if label_graph:
             m = c.median()
@@ -137,3 +142,26 @@ def visualize(df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray,
     for i in range(len(lgd.legendHandles)):
         lgd.legendHandles[i]._sizes = [30]
     plt.savefig(path, bbox_extra_artists=(lgd,), bbox_inches='tight')
+
+
+def visualize_(ax,
+               df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray,
+               cluster_labels: list[str],
+               label_graph=False):
+    for label, text in zip(clusters, cluster_labels):
+        c = df[df_labels == label]
+        # choose color scheme based on number of labels
+        if len(clusters) <= 20:
+            color = plt.cm.tab20(label)
+        else:
+            color = plt.cm.get_cmap('hsv')(label / len(clusters))
+        ax.scatter(c[0], c[1], c=[color] * len(c),
+                   s=2, label=text)
+        if label_graph:
+            m = c.median()
+            ax.text(m[0], m[1], str(label), weight='bold')
+    lgd = ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+                    fancybox=False, shadow=False, ncol=2)
+    for i in range(len(lgd.legendHandles)):
+        lgd.legendHandles[i]._sizes = [30]
+    return lgd

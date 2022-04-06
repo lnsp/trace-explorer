@@ -114,6 +114,10 @@ parser_compare.add_argument('--exclude_superset',
 parser_compare.add_argument('--exclude_subset', '--exclude',
                             action='append', default=[],
                             help='list of columns to exclude from subset')
+parser_compare.add_argument('--threshold', default=30, type=int,
+                            help='agg clustering threshold')
+parser_compare.add_argument('--top_n', default=2, type=int,
+                            help='only use the top N columns for labeling')
 
 parser.add_argument('-v', '--verbose', help='increase output verbosity')
 
@@ -161,11 +165,17 @@ def main():
 
         if args.method == 'limit':
             compare.by_limiting_columns(superset, subset,
-                                        args.exclude_subset, args.output)
+                                        args.exclude_subset, args.output,
+                                        [args.superset, args.subset],
+                                        cluster_threshold=args.threshold,
+                                        cluster_top_n=args.top_n)
         elif args.method == 'impute':
             compare.by_imputing_columns(superset, subset,
                                         args.exclude_superset,
-                                        args.exclude_subset, args.output)
+                                        args.exclude_subset, args.output,
+                                        [args.superset, args.subset],
+                                        cluster_threshold=args.threshold,
+                                        cluster_top_n=args.top_n)
     elif args.action == 'clean':
         df = pd.read_parquet(args.source)
         df = preprocess.filter_by_zscore(df, args.zscore, args.exclude)
