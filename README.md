@@ -4,11 +4,18 @@ This repository contains the source code of Trace Explorer, a toolset to explain
 
 ## Installation
 
-Go to [the latest Build & Lint workflow](https://github.com/lnsp/trace-explorer/actions/workflows/lint.yml) and download the latest `trace-explorer.zip` under the *Artifacts* section. The ZIP file contains a wheel file installable via
-
 ```bash
+# Download the latest trace-explorer.zip from nightly.link
+wget -O trace-explorer.zip https://nightly.link/lnsp/trace-explorer/workflows/lint/main/trace-explorer.zip
+# Unzip the archive
+unzip trace-explorer.zip
+# Install onto your machine
 pip install trace_explorer-1.0-py3-none-any.whl
+# Remove zip folder and wheel
+rm trace-explorer.zip trace_explorer-1.0-py3-none-any.whl
 ```
+
+You can also go to [the latest Build & Lint workflow](https://github.com/lnsp/trace-explorer/actions/workflows/lint.yml) and download the latest `trace-explorer.zip` under the *Artifacts* section manually.
 
 ## Usage
 
