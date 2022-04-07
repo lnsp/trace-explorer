@@ -33,9 +33,9 @@ B --> |Visualize samples| C[Plot as PDF]
 B --> |Compare with other dataset| C
 ```
 
-### Step 1: Turning the raw data into a parquet table
+### Turning the raw data into a parquet table
 
-> In case you want to go along and test out the commands but do not have the required data at hand, you can generate sample data using the `generator.py` script in the *sample-data* folder. Go down to the section on *Generating sample data*, follow the examples there or return to Step 1 later on.
+> In case you want to go along and test out the commands but do not have the required data at hand, you can generate sample data using the `generator.py` script in the *sample-data* folder. Go down to the section on *Generating sample data*, follow the examples there or return to this step later on.
 
 First, you have to convert your data into a common format. We use parquet for storing datasets because of its widespread compatibility and integrated compression. Each measurement must be converted into one row in the common dataset format. We provide the `CommonTraceConverter` interface to allow users to provide their own format converter. You can find examples for Snowset, Snowflake profiles, MSSQL and PostgreSQL in our `converter/` directory.
 
@@ -58,7 +58,7 @@ class Transformer(trace_explorer.transformer.Transformer):
         return [obj['scan'], obj['join'], obj['filter']]
 ```
 
-### Step 2: Find a good preprocessing pipeline
+### Find a good preprocessing pipeline
 
 To maximize the possibility of being able to derive conclusions from the data, a good preprocessing pipeline is very necessary. We provide a set of common preprocessing primitives, and allow for automatic tuning by optimizing for global variance.
 
@@ -78,7 +78,7 @@ trace_explorer generate --source mydataset.parquet --no_copy --query 'select * f
 trace_explorer stats --source mydataset.parquet
 ```
 
-### Step 3: Visualize your dataset
+### Visualize your dataset
 
 To make the most sense of your trace, you probably want to visualize your dataset. Trace Explorer supports clustering, auto-labeling and visualizing dataset clusters by
 
@@ -92,7 +92,7 @@ To make the most sense of your trace, you probably want to visualize your datase
 trace_explorer visualize --source mydataset.parquet --threshold 5
 ```
 
-### Step 4: Compare different traces
+### Compare different traces
 
 Finding a good way to compare cluster traces is difficult. A good approach when operating on a common or subset/superset feature space is to
 
