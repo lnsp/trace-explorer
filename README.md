@@ -35,6 +35,8 @@ B --> |Compare with other dataset| C
 
 ### Step 1: Turning the raw data into a parquet table
 
+> In case you want to go along and test out the commands but do not have the required data at hand, you can generate sample data using the `generator.py` script in the *sample-data* folder. Go down to the section on *Generating sample data*, follow the examples there or return to Step 1 later on.
+
 First, you have to convert your data into a common format. We use parquet for storing datasets because of its widespread compatibility and integrated compression. Each measurement must be converted into one row in the common dataset format. We provide the `CommonTraceConverter` interface to allow users to provide their own format converter. You can find examples for Snowset, Snowflake profiles, MSSQL and PostgreSQL in our `converter/` directory.
 
 ```bash
@@ -45,18 +47,15 @@ The provided transformer has to export a single class called `Transformer` imple
 
 ```python3
 import json
-import trace_explorer
+import trace_explorer.transformer
 
-class Transformer(trace_explorer.Transformer):
+class Transformer(trace_explorer.transformer.Transformer):
+    def columns(self):
+        return ['scan', 'join', 'filter']
 
-    def columns():
-        return ['scan', 'filter']
-
-
-    def transform(line: str):
-        obj = json.loads(line)
-        sum = obj['rsoScan'] + obj['rsoFilter']
-        return [obj['rsoScan'] / sum, obj['rsoFilter'] / sum]
+    def transform(self, content: str):
+        obj = json.loads(content)
+        return [obj['scan'], obj['join'], obj['filter']]
 ```
 
 ### Step 2: Find a good preprocessing pipeline
@@ -107,4 +106,18 @@ Finding a good way to compare cluster traces is difficult. A good approach when 
 ```bash
 # Compare both datasets in a single visualization
 trace_explorer compare --superset dataset1.parquet --subset dataset2.parquet --exclude badcolumns
+```
+### Generating sample data
+
+The repository contains a simple `generator.py` script in the `sample-data` directory. It generates multi-dimensional clustered data sampled from Laplace distributions.
+
+```bash
+# Generate a 2-column dataset with a join, scan and filter field with 5 clusters and 100 samples per cluster
+sample-data/generator.py -c join -c scan -c filter -n 300 -k 5 -d sample-data/raw/
+
+# Convert the dataset into parquet
+trace_explorer convert --using sample-data/transformer.py --destination sample-data/raw.parquet --source 'sample-data/raw/*.json'
+
+# Visualize the dataset, spills out a file named plot.pdf
+trace_explorer visualize --source sample-data/raw.parquet --threshold 20
 ```

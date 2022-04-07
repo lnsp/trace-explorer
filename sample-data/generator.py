@@ -15,6 +15,8 @@ parser.add_argument('-c', action='append',
                     help='column names')
 parser.add_argument('-f', default='data_%s_%s.json',
                     help='file naming scheme')
+parser.add_argument('-s', default=0.1, type=float,
+                    help='beta factor')
 
 args = parser.parse_args()
 
@@ -22,8 +24,8 @@ args = parser.parse_args()
 m = len(args.c)
 x = np.zeros((args.k, args.n, m))
 for k in range(args.k):
-    q = np.random.rand(m,)
-    p = np.random.rand(m,) + q
+    q = np.random.exponential(args.s, size=(m,))
+    p = np.random.rand(m,)
     s = np.zeros((m, args.n))
     for i in range(m):
         s[i] = np.random.laplace(p[i], q[i], args.n)
@@ -34,7 +36,7 @@ path = pathlib.Path(args.d)
 path.mkdir(parents=True, exist_ok=True)
 for k in range(args.k):
     for i in range(args.n):
-        with path.joinpath('data_%d_%d.json' % (k, i)).open('w') as f:
+        with path.joinpath(args.f % (k, i)).open('w') as f:
             obj = {
                 args.c[j]: x[k][i][j] for j in range(m)
             }
