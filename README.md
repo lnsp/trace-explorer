@@ -15,6 +15,8 @@ pip install trace_explorer-1.0-py3-none-any.whl
 rm trace-explorer.zip trace_explorer-1.0-py3-none-any.whl
 ```
 
+**Congrats, you can now use the `trace_explorer` command.**
+
 You can also go to [the latest Build & Lint workflow](https://github.com/lnsp/trace-explorer/actions/workflows/lint.yml) and download the latest `trace-explorer.zip` under the *Artifacts* section manually.
 
 ## Usage
