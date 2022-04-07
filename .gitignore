@@ -4,5 +4,4 @@ __pycache__
 dist/
 *.egg-info
 *.pdf
-*.parquet
 build/
