@@ -107,7 +107,7 @@ Finding a good way to compare cluster traces is difficult. A good approach when 
 # Compare both datasets in a single visualization
 trace_explorer compare --superset dataset1.parquet --subset dataset2.parquet --exclude badcolumns
 ```
-### Generating sample data
+## Generating sample data
 
 The repository contains a simple `generator.py` script in the `sample-data` directory. It generates multi-dimensional clustered data sampled from Laplace distributions.
 
