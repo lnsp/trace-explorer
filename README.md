@@ -120,4 +120,7 @@ trace_explorer convert --using sample-data/transformer.py --destination sample-d
 
 # Visualize the dataset, spills out a file named plot.pdf
 trace_explorer visualize --source sample-data/raw.parquet --threshold 20
+
+# Compare two sampled datasets
+trace_explorer compare --superset sample-data/raw.parquet --subset sample-data/raw2.parquet
 ```
