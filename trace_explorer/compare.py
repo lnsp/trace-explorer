@@ -4,29 +4,40 @@ import matplotlib.pyplot as plt
 from trace_explorer import visualize
 import sklearn.impute
 from sklearn.experimental import enable_iterative_imputer
+import itertools
 
 # Required to disable flake8 import warning
 enable_iterative_imputer
 
 
-def by_limiting_columns(superset: pd.DataFrame, subset: pd.DataFrame,
-                        exclude: list[str], path: str,
-                        cluster_labels_source=['superset', 'subset'],
-                        cluster_threshold=30,
-                        cluster_top_n=2):
+def by_limiting_columns(
+        datasets: list[pd.DataFrame],
+        exclude: list[str], path: str,
+        cluster_labels_source=['superset', 'subset'],
+        cluster_threshold=30,
+        cluster_top_n=2):
     """
     Compares two datasets (called superset and subset) by restricting
     the column space to the subset columns.
     """
 
     print('Comparing datasets by limiting columns '
-          'to subset (n = %d, m = %d) ...' % (len(superset), len(subset)))
-    cols = list(set(subset.columns) - set(exclude))
+          'to cut (n = [%s]) ...' %
+          (','.join(str(len(s)) for s in datasets)))
 
-    concatenated = pd.concat([superset[cols], subset[cols]])
+    # Compute cut of columns in subset
+    cols = set(datasets[0].columns)
+    for s in datasets[1:]:
+        cols.intersection_update(set(s.columns))
+    cols = list(cols - set(exclude))
 
-    clusters_source = np.array([0, 1])
-    labels_source = np.array([0] * len(superset) + [1] * len(subset))
+    concatenated = pd.concat([s[cols] for s in datasets])
+
+    clusters_source = np.array(range(len(datasets)))
+    labels_source = np.array(
+        list(
+            itertools.chain.from_iterable(
+                len(datasets[i]) * [i] for i in range(len(datasets)))))
     pcad = visualize.compute_pca(concatenated)
     tsne = visualize.compute_tsne(pcad, pcad.index)
 
@@ -38,7 +49,7 @@ def by_limiting_columns(superset: pd.DataFrame, subset: pd.DataFrame,
                                  clusters_auto, labels_auto,
                                  top_n_columns=cluster_top_n)
 
-    _, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10))
+    _, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 20))
 
     lgd1 = visualize.visualize_(ax1, tsne, labels_source, clusters_source,
                                 cluster_labels_source)

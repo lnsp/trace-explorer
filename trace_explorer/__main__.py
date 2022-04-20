@@ -157,20 +157,20 @@ def main():
         join.join(args.sources, args.output)
     elif args.action == 'compare':
         superset = pd.read_parquet(args.superset)
-        subset = pd.read_parquet(args.subset)
+        subsets = [pd.read_parquet(s) for s in args.subset]
 
         # Compare versus subsample is required
         if args.superset_sample:
             superset = superset.sample(n=args.superset_sample)
 
         if args.method == 'limit':
-            compare.by_limiting_columns(superset, subset,
+            compare.by_limiting_columns([superset] + subsets,
                                         args.exclude_subset, args.output,
                                         [args.superset, args.subset],
                                         cluster_threshold=args.threshold,
                                         cluster_top_n=args.top_n)
         elif args.method == 'impute':
-            compare.by_imputing_columns(superset, subset,
+            compare.by_imputing_columns(superset, subsets[0],
                                         args.exclude_superset,
                                         args.exclude_subset, args.output,
                                         [args.superset, args.subset],
