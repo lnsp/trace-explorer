@@ -63,6 +63,8 @@ parser_generate.add_argument('--query',
                              required=True)
 parser_generate.add_argument('--output',
                              help='destination for processed dataset')
+parser_generate.add_argument('--fillna', default=0.0, type=float,
+                             help='fill value for NA')
 
 parser_join = subparsers.add_parser('join')
 parser_join.add_argument('--sources',
@@ -73,7 +75,8 @@ parser_visualize = subparsers.add_parser('visualize')
 parser_visualize.add_argument('--source',
                               help='source dataset to process', required=True)
 parser_visualize.add_argument('--size',
-                              help='dataset subset size to process', default=0)
+                              help='dataset subset size to process', default=0,
+                              type=int)
 parser_visualize.add_argument('--threshold',
                               default=80,
                               help='threshold for agglomerative clustering',
@@ -98,7 +101,7 @@ parser_visualize.add_argument('--top_n',
 
 parser_compare = subparsers.add_parser('compare')
 parser_compare.add_argument('--superset',
-                            action='append', help='superset to compare to')
+                            help='superset to compare to')
 parser_compare.add_argument('--superset_sample',
                             default=None, type=int,
                             help='number of samples to take from superset')
@@ -119,6 +122,14 @@ parser_compare.add_argument('--threshold', default=30, type=int,
 parser_compare.add_argument('--top_n', default=2, type=int,
                             help='only use the top N columns for labeling')
 
+parser_sample = subparsers.add_parser('sample')
+parser_sample.add_argument('--source', required=True,
+                           help='source dataset to process')
+parser_sample.add_argument('-n', default=10000, type=int,
+                           help='number of samples')
+parser_sample.add_argument('--output', required=True,
+                           help='destination dataset')
+
 parser.add_argument('-v', '--verbose', help='increase output verbosity')
 
 
@@ -129,8 +140,9 @@ def main():
         # open dataframe
         df = pd.read_parquet(args.source)
         if args.size == 0:
-            args.size = len(df)
-        sample = np.random.choice(df.index, size=args.size, replace=False)
+            sample = df.index
+        else:
+            sample = np.random.choice(df.index, size=args.size, replace=False)
         # get target series
         target_series = None
         if args.target:
@@ -138,19 +150,22 @@ def main():
         # exclude columns
         df = df[list(set(df.columns) - set(args.exclude))]
         df_pcad = visualize.compute_pca(df)
-        df_tsne = visualize.compute_tsne(df_pcad, sample,
-                                         perplexity=args.perplexity,
-                                         n_iter=args.n_iter)
         clusters, labels = visualize.compute_clusters(df_pcad, sample,
                                                       threshold=args.threshold)
         cluster_labels = visualize.label_clusters(df, sample, clusters, labels,
                                                   target=target_series,
                                                   top_n_columns=args.top_n)
+        df_tsne = visualize.compute_tsne(df_pcad, sample,
+                                         perplexity=args.perplexity,
+                                         n_iter=args.n_iter)
         visualize.visualize(df_tsne, labels, clusters, cluster_labels,
                             args.output)
     elif args.action == 'generate':
         df = pd.read_parquet(args.source)
         df = preprocess.generate_columns(df, args.query, no_copy=args.no_copy)
+        df.fillna(args.fillna, inplace=True)
+        df.reset_index(inplace=True, drop=True)
+
         df.to_parquet(args.output if args.output else args.source)
     elif args.action == 'join':
         # read all dfs
@@ -166,16 +181,17 @@ def main():
         if args.method == 'limit':
             compare.by_limiting_columns([superset] + subsets,
                                         args.exclude_subset, args.output,
-                                        [args.superset, args.subset],
+                                        [args.superset] + args.subset,
                                         cluster_threshold=args.threshold,
                                         cluster_top_n=args.top_n)
         elif args.method == 'impute':
-            compare.by_imputing_columns(superset, subsets[0],
-                                        args.exclude_superset,
-                                        args.exclude_subset, args.output,
-                                        [args.superset, args.subset],
-                                        cluster_threshold=args.threshold,
-                                        cluster_top_n=args.top_n)
+            print('not implemented')
+            # compare.by_imputing_columns(superset, subsets[0],
+            #                            args.exclude_superset,
+            #                            args.exclude_subset, args.output,
+            #                            [args.superset, args.subset],
+            #                            cluster_threshold=args.threshold,
+            #                            cluster_top_n=args.top_n)
     elif args.action == 'clean':
         df = pd.read_parquet(args.source)
         df = preprocess.filter_by_zscore(df, args.zscore, args.exclude)
@@ -194,6 +210,10 @@ def main():
         df = pd.read_parquet(args.source)
         print(df.describe())
         print(df.columns)
+    elif args.action == 'sample':
+        df = pd.read_parquet(args.source)
+        df = df.sample(n=args.n).reset_index(drop=True)
+        df.to_parquet(args.output)
 
 
 if __name__ == "__main__":

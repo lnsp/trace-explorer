@@ -31,13 +31,13 @@ def by_limiting_columns(
         cols.intersection_update(set(s.columns))
     cols = list(cols - set(exclude))
 
-    concatenated = pd.concat([s[cols] for s in datasets])
-
+    concatenated = pd.concat([s[cols] for s in datasets]).reset_index(drop=True)
     clusters_source = np.array(range(len(datasets)))
-    labels_source = np.array(
-        list(
-            itertools.chain.from_iterable(
-                len(datasets[i]) * [i] for i in range(len(datasets)))))
+    dataset_lengths = [len(s) for s in datasets]
+    labels_source = np.fromiter(
+        itertools.chain.from_iterable(
+            (np.full(j, i) for (i, j) in enumerate(dataset_lengths))), int)
+
     pcad = visualize.compute_pca(concatenated)
     tsne = visualize.compute_tsne(pcad, pcad.index)
 
