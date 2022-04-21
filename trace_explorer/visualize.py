@@ -1,9 +1,12 @@
 from sklearn import preprocessing, decomposition, manifold, cluster, ensemble
 import pandas as pd
+import pandas.util
 import numpy as np
 import matplotlib.pyplot as plt
 import math
 import re
+import joblib
+import os
 
 
 def numeric_subset(df: pd.DataFrame):
@@ -34,12 +37,29 @@ def compute_tsne(df: pd.DataFrame, subset_idx: np.ndarray,
     Compute a 2-dimensional embedding of the given subset of data.
     """
 
+    # Compute hash of dataframe, check cache
+    h = pandas.util.hash_pandas_object(df).sum()
+    print(h)
+    # Check local dir
+    try:
+        return joblib.load('.cache/%d.gz' % h)
+    except Exception:
+        pass
+
     if len(subset_idx) > 100_000:
         raise 'warning: DataFrame subset may be too large'
+    filtered_idx = df[df.index.isin(subset_idx)].index
     X = manifold.TSNE(perplexity=perplexity, n_iter=n_iter,
                       learning_rate='auto',
                       init='pca').fit_transform(df[df.index.isin(subset_idx)])
-    return pd.DataFrame(data=X, index=subset_idx)
+    # Attempt to store in cache
+    try:
+        if not os.path.exists('.cache'):
+            os.mkdir('.cache')
+        joblib.dump(X, '.cache/%d.gz' % h)
+    except Exception:
+        print('Could not cache TSNE embedding')
+    return pd.DataFrame(data=X, index=filtered_idx)
 
 
 def compute_clusters(df: pd.DataFrame, subset_idx: np.ndarray,
@@ -74,19 +94,18 @@ def label_clusters(df: pd.DataFrame, subset_idx: np.ndarray,
     cluster_global_std = df.std(axis=0)
 
     # compute cluster zscores
-    cluster_means = []
-    cluster_zscores = []
+    cluster_means = np.zeros((len(clusters), len(df.columns)))
+    cluster_stds = np.zeros((len(clusters), len(df.columns)))
+    cluster_zscores = np.zeros((len(clusters), len(df.columns)))
 
     # determine variance within
     for i in clusters:
         idx = df.index.isin(subset_idx[labels == i])
-        mean = df[idx].mean(axis=0)
-        cluster_means.append(mean)
-        cluster_zscores.append((mean - cluster_global_mean)
-                               / cluster_global_std)
 
-    cluster_means = np.array(cluster_means)
-    cluster_zscores = np.array(cluster_zscores)
+        cluster_stds[i] = df[idx].std(axis=0)
+        cluster_means[i] = df[idx].mean(axis=0)
+        cluster_zscores[i] = ((cluster_means[i] - cluster_global_mean)
+                               / cluster_global_std) * (1 + cluster_global_std) / (1 + cluster_stds[i])
 
     # rank cluster columns by zscores
     cluster_cols = []
@@ -151,7 +170,9 @@ def visualize_(ax,
     for label, text in zip(clusters, cluster_labels):
         c = df[df_labels == label]
         # choose color scheme based on number of labels
-        if len(clusters) <= 20:
+        if len(clusters) <= 10:
+            color = plt.cm.tab10(label)
+        elif len(clusters) <= 20:
             color = plt.cm.tab20(label)
         else:
             color = plt.cm.get_cmap('hsv')(label / len(clusters))
