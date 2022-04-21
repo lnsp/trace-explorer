@@ -1,6 +1,6 @@
+from trace_explorer import transformer
 import xml.etree.ElementTree as ET
 from collections import defaultdict
-import transformer
 
 op_keywords = {
     'Top': 'Res',

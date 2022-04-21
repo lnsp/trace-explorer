@@ -1,4 +1,4 @@
-import transformer
+from trace_explorer import transformer
 import json
 import collections
 
