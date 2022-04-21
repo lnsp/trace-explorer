@@ -121,6 +121,10 @@ parser_compare.add_argument('--threshold', default=30, type=int,
                             help='agg clustering threshold')
 parser_compare.add_argument('--top_n', default=2, type=int,
                             help='only use the top N columns for labeling')
+parser_compare.add_argument('--tsne_n_iter', default=1000, type=int,
+                            help='max number of iterations for TSNE')
+parser_compare.add_argument('--tsne_perplexity', default=30, type=int,
+                            help='TSNE perplexity setting')
 
 parser_sample = subparsers.add_parser('sample')
 parser_sample.add_argument('--source', required=True,
@@ -179,11 +183,14 @@ def main():
             superset = superset.sample(n=args.superset_sample)
 
         if args.method == 'limit':
-            compare.by_limiting_columns([superset] + subsets,
-                                        args.exclude_subset, args.output,
-                                        [args.superset] + args.subset,
+            compare.by_limiting_columns(datasets = [superset] + subsets,
+                                        exclude = args.exclude_subset,
+                                        path = args.output,
+                                        cluster_labels_source = [args.superset] + args.subset,
                                         cluster_threshold=args.threshold,
-                                        cluster_top_n=args.top_n)
+                                        cluster_top_n=args.top_n,
+                                        tsne_n_iter=args.tsne_n_iter,
+                                        tsne_perplexity=args.tsne_perplexity)
         elif args.method == 'impute':
             print('not implemented')
             # compare.by_imputing_columns(superset, subsets[0],

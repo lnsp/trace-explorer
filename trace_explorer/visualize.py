@@ -1,4 +1,5 @@
 from sklearn import preprocessing, decomposition, manifold, cluster, ensemble
+from trace_explorer import radar
 import pandas as pd
 import pandas.util
 import numpy as np
@@ -38,7 +39,8 @@ def compute_tsne(df: pd.DataFrame, subset_idx: np.ndarray,
     """
 
     # Compute hash of dataframe, check cache
-    h = pandas.util.hash_pandas_object(df).sum()
+    h = hash(df.to_numpy().tobytes())
+
     print(h)
     # Check local dir
     try:
@@ -186,3 +188,38 @@ def visualize_(ax,
     for i in range(len(lgd.legendHandles)):
         lgd.legendHandles[i]._sizes = [30]
     return lgd
+
+def visualize_traits_(ax: plt.Axes, theta: np.ndarray, df: pd.DataFrame, labels: np.ndarray, label: int):
+    # plot baseline
+    ax.plot(theta, df.mean(axis=0).to_numpy(), color='k')
+    ax.fill(theta, df.mean(axis=0).to_numpy(), color='k', alpha=0.25)
+    ax.plot(theta, df[labels == label].mean(axis=0).to_numpy(), color='b')
+    ax.fill(theta, df[labels == label].mean(axis=0).to_numpy(), color='b', alpha=0.25)
+
+    labels = ('Baseline', 'Cluster')
+    ax.set_varlabels([_filter_column_name(s) for s in df.columns.to_list()])
+    return ax.legend(labels, loc='upper right', fancybox=False, shadow=False,
+                     labelspacing=0.1, fontsize='small')
+
+def visualize_cluster(original: pd.DataFrame, embedding: pd.DataFrame, figsize: tuple[int], cluster_path: str, clusters: np.ndarray, cluster_names: list[str], labels: np.ndarray):
+    # Generate N smaller subplots for each cluster, could be useful
+    rd = radar.RadarAxesFactory(len(original.columns), frame='polygon')
+    for i in range(len(clusters)):
+        fig = plt.figure(figsize=figsize)
+
+        # Generate label graph
+        gs = fig.add_gridspec(1, 2)
+        ax1 = fig.add_subplot(gs[0, 0])
+        ax2 = fig.add_subplot(gs[0, 1], projection=rd)
+
+        labels_local = np.fromiter((1 if labels[j] == clusters[i] else 0 for j in range(len(labels))), dtype=int)
+        clusters_local = np.array([0, 1])
+        description_local = np.array(['all', cluster_names[i]])
+
+        lgd1 = visualize_(ax1, embedding, labels_local,
+                          clusters_local, description_local)
+        lgd2 = visualize_traits_(ax2, rd.theta, original, labels, clusters[i])
+        ax2.set_ylim(bottom=0, top=1)
+
+        plt.savefig(cluster_path % i, bbox_extra_artists=(lgd1, lgd2), bbox_inches='tight')
+        plt.close(fig)

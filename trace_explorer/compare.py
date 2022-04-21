@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from trace_explorer import visualize
+from trace_explorer import visualize, radar
 import sklearn.impute
 from sklearn.experimental import enable_iterative_imputer
 import itertools
@@ -13,9 +13,14 @@ enable_iterative_imputer
 def by_limiting_columns(
         datasets: list[pd.DataFrame],
         exclude: list[str], path: str,
+        tsne_n_iter=1000,
+        tsne_perplexity=30,
         cluster_labels_source=['superset', 'subset'],
         cluster_threshold=30,
-        cluster_top_n=2):
+        cluster_top_n=2,
+        figsize=(10, 20),
+        cluster_figsize=(20, 10),
+        cluster_path: str = 'plot_cluster_%d.pdf'):
     """
     Compares two datasets (called superset and subset) by restricting
     the column space to the subset columns.
@@ -39,7 +44,7 @@ def by_limiting_columns(
             (np.full(j, i) for (i, j) in enumerate(dataset_lengths))), int)
 
     pcad = visualize.compute_pca(concatenated)
-    tsne = visualize.compute_tsne(pcad, pcad.index)
+    tsne = visualize.compute_tsne(pcad, pcad.index, n_iter=tsne_n_iter, perplexity=tsne_perplexity)
 
     clusters_auto, labels_auto = \
         visualize.compute_clusters(pcad, concatenated.index,
@@ -57,6 +62,11 @@ def by_limiting_columns(
                                 cluster_labels_auto)
 
     plt.savefig(path, bbox_extra_artists=(lgd1, lgd2), bbox_inches='tight')
+
+    if cluster_path is None:
+        return
+    
+    visualize.visualize_cluster(concatenated, tsne, cluster_figsize, cluster_path, clusters_auto, cluster_labels_auto, labels_auto)
 
 
 def by_imputing_columns(superset: pd.DataFrame, subset: pd.DataFrame,
