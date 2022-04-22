@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-from trace_explorer import visualize, radar
+from trace_explorer import visualize
 import sklearn.impute
 from sklearn.experimental import enable_iterative_imputer
 import itertools
@@ -36,7 +35,8 @@ def by_limiting_columns(
         cols.intersection_update(set(s.columns))
     cols = list(cols - set(exclude))
 
-    concatenated = pd.concat([s[cols] for s in datasets]).reset_index(drop=True)
+    concatenated = pd.concat([s[cols] for s in datasets])
+    concatenated.reset_index(inplace=True, drop=True)
     clusters_source = np.array(range(len(datasets)))
     dataset_lengths = [len(s) for s in datasets]
     labels_source = np.fromiter(
@@ -44,7 +44,9 @@ def by_limiting_columns(
             (np.full(j, i) for (i, j) in enumerate(dataset_lengths))), int)
 
     pcad = visualize.compute_pca(concatenated)
-    tsne = visualize.compute_tsne(pcad, pcad.index, n_iter=tsne_n_iter, perplexity=tsne_perplexity)
+    tsne = visualize.compute_tsne(pcad, pcad.index,
+                                  n_iter=tsne_n_iter,
+                                  perplexity=tsne_perplexity)
 
     clusters_auto, labels_auto = \
         visualize.compute_clusters(pcad, concatenated.index,
@@ -54,19 +56,17 @@ def by_limiting_columns(
                                  clusters_auto, labels_auto,
                                  top_n_columns=cluster_top_n)
 
-    _, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 20))
-
-    lgd1 = visualize.visualize_(ax1, tsne, labels_source, clusters_source,
-                                cluster_labels_source)
-    lgd2 = visualize.visualize_(ax2, tsne, labels_auto, clusters_auto,
-                                cluster_labels_auto)
-
-    plt.savefig(path, bbox_extra_artists=(lgd1, lgd2), bbox_inches='tight')
-
+    visualize.compare_datasets(tsne, path,
+                               labels_source, clusters_source,
+                               cluster_labels_source,
+                               labels_auto, clusters_auto,
+                               cluster_labels_auto)
     if cluster_path is None:
         return
-    
-    visualize.visualize_cluster(concatenated, tsne, cluster_figsize, cluster_path, clusters_auto, cluster_labels_auto, labels_auto)
+
+    visualize.inspect_clusters(concatenated, tsne, cluster_figsize,
+                               cluster_path, clusters_auto,
+                               cluster_labels_auto, labels_auto)
 
 
 def by_imputing_columns(superset: pd.DataFrame, subset: pd.DataFrame,
@@ -109,11 +109,8 @@ def by_imputing_columns(superset: pd.DataFrame, subset: pd.DataFrame,
                                  clusters_auto, labels_auto,
                                  top_n_columns=cluster_top_n)
 
-    _, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10))
-
-    lgd1 = visualize.visualize_(ax1, tsne, labels_source, clusters_source,
-                                cluster_labels_source)
-    lgd2 = visualize.visualize_(ax2, tsne, labels_auto, clusters_auto,
-                                cluster_labels_auto)
-
-    plt.savefig(path, bbox_extra_artists=(lgd1, lgd2), bbox_inches='tight')
+    visualize.compare_datasets(tsne, path,
+                               labels_source, clusters_source,
+                               cluster_labels_source,
+                               labels_auto, clusters_auto,
+                               cluster_labels_auto)

@@ -167,10 +167,11 @@ def visualize(df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray,
     plt.savefig(path, bbox_extra_artists=(lgd,), bbox_inches='tight')
 
 
-def visualize_(ax: plt.Axes,
-               df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray,
-               cluster_labels: list[str],
-               label_graph=False):
+def _plot_clusters(ax: plt.Axes,
+                   df: pd.DataFrame, df_labels: np.ndarray,
+                   clusters: np.ndarray,
+                   cluster_labels: list[str],
+                   label_graph=False):
     for label, text in zip(clusters, cluster_labels):
         c = df[df_labels == label]
         # choose color scheme based on number of labels
@@ -192,7 +193,7 @@ def visualize_(ax: plt.Axes,
     return lgd
 
 
-def visualize_traits_(
+def _visualize_traits(
         ax: plt.Axes, theta: np.ndarray, df: pd.DataFrame,
         labels: np.ndarray, label: int):
     # plot baseline
@@ -208,7 +209,24 @@ def visualize_traits_(
                      labelspacing=0.1, fontsize='small')
 
 
-def visualize_cluster(
+def compare_datasets(tsne: pd.DataFrame, path: str,
+                     labels_source: np.ndarray, clusters_source: np.ndarray,
+                     cluster_labels_source: np.ndarray,
+                     labels_auto: np.ndarray, clusters_auto: np.ndarray,
+                     cluster_labels_auto: np.ndarray):
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 20))
+
+    lgd1 = _plot_clusters(ax1, tsne, labels_source, clusters_source,
+                          cluster_labels_source)
+    lgd2 = _plot_clusters(ax2, tsne, labels_auto, clusters_auto,
+                          cluster_labels_auto)
+
+    plt.savefig(path, bbox_extra_artists=(lgd1, lgd2), bbox_inches='tight')
+    plt.close(fig)
+
+
+def inspect_clusters(
         original: pd.DataFrame, embedding: pd.DataFrame, figsize: tuple[int],
         cluster_path: str, clusters: np.ndarray, cluster_names: list[str],
         labels: np.ndarray):
@@ -228,9 +246,9 @@ def visualize_cluster(
         clusters_local = np.array([0, 1])
         description_local = np.array(['all', cluster_names[i]])
 
-        lgd1 = visualize_(ax1, embedding, labels_local,
-                          clusters_local, description_local)
-        lgd2 = visualize_traits_(ax2, rd.theta, original, labels, clusters[i])
+        lgd1 = _plot_clusters(ax1, embedding, labels_local,
+                              clusters_local, description_local)
+        lgd2 = _visualize_traits(ax2, rd.theta, original, labels, clusters[i])
         ax2.set_ylim(bottom=0, top=1)
 
         plt.savefig(cluster_path % i, bbox_extra_artists=(lgd1, lgd2),
