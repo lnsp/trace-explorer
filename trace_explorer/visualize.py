@@ -106,8 +106,10 @@ def label_clusters(df: pd.DataFrame, subset_idx: np.ndarray,
 
         cluster_stds[i] = df[idx].std(axis=0)
         cluster_means[i] = df[idx].mean(axis=0)
-        cluster_zscores[i] = ((cluster_means[i] - cluster_global_mean)
-                               / cluster_global_std) * (1 + cluster_global_std) / (1 + cluster_stds[i])
+
+        mean_dev = cluster_means[i] - cluster_global_mean
+        std_ratio = (1 + cluster_global_std) / (1 + cluster_stds[i])
+        cluster_zscores[i] = mean_dev / cluster_global_std * std_ratio
 
     # rank cluster columns by zscores
     cluster_cols = []
@@ -165,7 +167,7 @@ def visualize(df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray,
     plt.savefig(path, bbox_extra_artists=(lgd,), bbox_inches='tight')
 
 
-def visualize_(ax,
+def visualize_(ax: plt.Axes,
                df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray,
                cluster_labels: list[str],
                label_graph=False):
@@ -189,19 +191,27 @@ def visualize_(ax,
         lgd.legendHandles[i]._sizes = [30]
     return lgd
 
-def visualize_traits_(ax: plt.Axes, theta: np.ndarray, df: pd.DataFrame, labels: np.ndarray, label: int):
+
+def visualize_traits_(
+        ax: plt.Axes, theta: np.ndarray, df: pd.DataFrame,
+        labels: np.ndarray, label: int):
     # plot baseline
     ax.plot(theta, df.mean(axis=0).to_numpy(), color='k')
     ax.fill(theta, df.mean(axis=0).to_numpy(), color='k', alpha=0.25)
     ax.plot(theta, df[labels == label].mean(axis=0).to_numpy(), color='b')
-    ax.fill(theta, df[labels == label].mean(axis=0).to_numpy(), color='b', alpha=0.25)
+    ax.fill(theta, df[labels == label].mean(axis=0).to_numpy(), color='b',
+            alpha=0.25)
 
     labels = ('Baseline', 'Cluster')
     ax.set_varlabels([_filter_column_name(s) for s in df.columns.to_list()])
     return ax.legend(labels, loc='upper right', fancybox=False, shadow=False,
                      labelspacing=0.1, fontsize='small')
 
-def visualize_cluster(original: pd.DataFrame, embedding: pd.DataFrame, figsize: tuple[int], cluster_path: str, clusters: np.ndarray, cluster_names: list[str], labels: np.ndarray):
+
+def visualize_cluster(
+        original: pd.DataFrame, embedding: pd.DataFrame, figsize: tuple[int],
+        cluster_path: str, clusters: np.ndarray, cluster_names: list[str],
+        labels: np.ndarray):
     # Generate N smaller subplots for each cluster, could be useful
     rd = radar.RadarAxesFactory(len(original.columns), frame='polygon')
     for i in range(len(clusters)):
@@ -212,7 +222,9 @@ def visualize_cluster(original: pd.DataFrame, embedding: pd.DataFrame, figsize: 
         ax1 = fig.add_subplot(gs[0, 0])
         ax2 = fig.add_subplot(gs[0, 1], projection=rd)
 
-        labels_local = np.fromiter((1 if labels[j] == clusters[i] else 0 for j in range(len(labels))), dtype=int)
+        labels_iter = (1 if labels[j] == clusters[i] else 0
+                       for j in range(len(labels)))
+        labels_local = np.fromiter(labels_iter, dtype=int)
         clusters_local = np.array([0, 1])
         description_local = np.array(['all', cluster_names[i]])
 
@@ -221,5 +233,6 @@ def visualize_cluster(original: pd.DataFrame, embedding: pd.DataFrame, figsize: 
         lgd2 = visualize_traits_(ax2, rd.theta, original, labels, clusters[i])
         ax2.set_ylim(bottom=0, top=1)
 
-        plt.savefig(cluster_path % i, bbox_extra_artists=(lgd1, lgd2), bbox_inches='tight')
+        plt.savefig(cluster_path % i, bbox_extra_artists=(lgd1, lgd2),
+                    bbox_inches='tight')
         plt.close(fig)
