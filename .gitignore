@@ -6,3 +6,5 @@ dist/
 *.pdf
 build/
 .cache
+*.joblib
+*.parquet

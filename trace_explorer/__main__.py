@@ -3,6 +3,7 @@ import argparse
 import os
 import pandas as pd
 import numpy as np
+import joblib
 
 from trace_explorer import visualize, join, convert, preprocess, compare
 
@@ -98,8 +99,12 @@ parser_visualize.add_argument('--target',
 parser_visualize.add_argument('--top_n',
                               help='show top N outlier columns',
                               default=2, type=int)
+parser_visualize.add_argument('--dump_labels',
+                              help='dump labels to joblib file')
 
-parser_compare = subparsers.add_parser('compare')
+parser_compare = subparsers.add_parser(
+    'compare', description=''
+    'compare different datasets against a common set of features')
 parser_compare.add_argument('--superset',
                             help='superset to compare to')
 parser_compare.add_argument('--superset_sample',
@@ -134,13 +139,36 @@ parser_sample.add_argument('-n', default=10000, type=int,
 parser_sample.add_argument('--output', required=True,
                            help='destination dataset')
 
+parser_unroll = subparsers.add_parser('unroll')
+parser_unroll.add_argument('--source',
+                           required=True, help='source dataset to process')
+parser_unroll.add_argument('--labels',
+                           required=True,
+                           help='dump of cluster labels for source dataset')
+parser_unroll.add_argument('--target',
+                           type=int, required=True,
+                           help='target cluster to unroll')
+parser_unroll.add_argument('--output',
+                           default='output.parquet',
+                           required=True)
+
 parser.add_argument('-v', '--verbose', help='increase output verbosity')
 
 
 def main():
     args = parser.parse_args()
 
-    if args.action == 'visualize':
+    if args.action == 'unroll':
+        # open dataframe
+        df = pd.read_parquet(args.source)
+        # load joblib with labels
+        labels = joblib.load(args.labels)
+        print(labels)
+        # filter df based on labels
+        df = df[labels == args.target]
+        # and dump as parquet
+        df.to_parquet(args.output)
+    elif args.action == 'visualize':
         # open dataframe
         df = pd.read_parquet(args.source)
         if args.size == 0:
@@ -159,6 +187,8 @@ def main():
         cluster_labels = visualize.label_clusters(df, sample, clusters, labels,
                                                   target=target_series,
                                                   top_n_columns=args.top_n)
+        if args.dump_labels:
+            joblib.dump(labels, args.dump_labels, ('gzip', 9))
         df_tsne = visualize.compute_tsne(df_pcad, sample,
                                          perplexity=args.perplexity,
                                          n_iter=args.n_iter)
@@ -183,14 +213,15 @@ def main():
             superset = superset.sample(n=args.superset_sample)
 
         if args.method == 'limit':
-            compare.by_limiting_columns(datasets = [superset] + subsets,
-                                        exclude = args.exclude_subset,
-                                        path = args.output,
-                                        cluster_labels_source = [args.superset] + args.subset,
-                                        cluster_threshold=args.threshold,
-                                        cluster_top_n=args.top_n,
-                                        tsne_n_iter=args.tsne_n_iter,
-                                        tsne_perplexity=args.tsne_perplexity)
+            compare.by_limiting_columns(
+                datasets=[superset] + subsets,
+                exclude=args.exclude_subset,
+                path=args.output,
+                cluster_labels_source=[args.superset] + args.subset,
+                cluster_threshold=args.threshold,
+                cluster_top_n=args.top_n,
+                tsne_n_iter=args.tsne_n_iter,
+                tsne_perplexity=args.tsne_perplexity)
         elif args.method == 'impute':
             print('not implemented')
             # compare.by_imputing_columns(superset, subsets[0],
