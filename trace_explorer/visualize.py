@@ -93,7 +93,7 @@ def label_clusters(df: pd.DataFrame, subset_idx: np.ndarray,
     """
     # compute mean, stddev
     cluster_global_mean = df.mean(axis=0)
-    cluster_global_std = df.std(axis=0)
+    cluster_global_std = df.std(axis=0, ddof=0)
 
     # compute cluster zscores
     cluster_means = np.zeros((len(clusters), len(df.columns)))
@@ -104,7 +104,7 @@ def label_clusters(df: pd.DataFrame, subset_idx: np.ndarray,
     for i in clusters:
         idx = df.index.isin(subset_idx[labels == i])
 
-        cluster_stds[i] = df[idx].std(axis=0)
+        cluster_stds[i] = df[idx].std(axis=0, ddof=0)
         cluster_means[i] = df[idx].mean(axis=0)
 
         mean_dev = cluster_means[i] - cluster_global_mean
