@@ -23,7 +23,8 @@ def find_dataset(path):
     return sorted(glob.glob(path))
 
 
-def to_parquet(tf: transformer.Transformer, files: list[str], dest: str):
+def to_parquet(tf: transformer.Transformer, files: list[str], dest: str,
+               with_path: bool = False):
     """
     Uses the given transformer to convert the listed files
     into a parquet table.
@@ -33,7 +34,8 @@ def to_parquet(tf: transformer.Transformer, files: list[str], dest: str):
     for fpath in files:
         try:
             with open(fpath) as f:
-                rows.append(tf.transform(f.read()))
+                row = tf.transform(f.read(), path=fpath if with_path else None)
+                rows.append(row)
         except Exception as e:
             print('skipped source %s, got %s' % (fpath, e))
     # convert into dataframe

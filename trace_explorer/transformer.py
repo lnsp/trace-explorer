@@ -7,5 +7,5 @@ class Transformer(object):
         pass
 
     @abstractmethod
-    def transform(self, content: str) -> list:
+    def transform(self, content: str, path: str = None) -> list:
         pass

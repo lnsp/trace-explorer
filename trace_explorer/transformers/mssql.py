@@ -33,7 +33,7 @@ class Transformer(transformer.Transformer):
     def columns(self):
         return columns
 
-    def transform(self, content):
+    def transform(self, content, path=None):
         tree = ET.fromstring(content)
 
         op_map = defaultdict(list)
@@ -52,5 +52,11 @@ class Transformer(transformer.Transformer):
             op_map[logical_op].append(max(total_time))
         op_map_sum = sum(sum(op_map[x]) for x in op_map)
         row = {x: sum(op_map[x])/op_map_sum for x in op_map}
+
+        # try to detect queryNumber from path
+        if path:
+            # we expect a path with suffix _{queryNumber}_{iteration}.xml
+            components = path.split('_')
+            row['queryNumber'] = int(components[-2])
 
         return [row[c] if c in row else 0 for c in columns]

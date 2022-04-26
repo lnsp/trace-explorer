@@ -34,6 +34,9 @@ parser_convert.add_argument('--using',
 parser_convert.add_argument('--destination',
                             help='path to store processed data at',
                             required=True)
+parser_convert.add_argument('--with_path',
+                            help='supply path to transformer',
+                            type=bool, default=False)
 
 parser_clean = \
     subparsers.add_parser('clean', description=''
@@ -242,7 +245,7 @@ def main():
             print('no files found')
             os.exit(1)
         # pipe files through transformer
-        convert.to_parquet(tf, files, args.destination)
+        convert.to_parquet(tf, files, args.destination, with_path=args.with_path)
     elif args.action == 'stats':
         # print out df stats
         df = pd.read_parquet(args.source)

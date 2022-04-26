@@ -61,7 +61,7 @@ class Transformer(transformer.Transformer):
     def columns(self):
         return ['queryNumber', 'queryId'] + stat_cols + op_cols
 
-    def transform(self, content):
+    def transform(self, content, path=None):
         # expect merged metadata file
         obj = json.loads(content)
         queryNumber = obj['queryNumber']
