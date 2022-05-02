@@ -245,7 +245,8 @@ def main():
             print('no files found')
             os.exit(1)
         # pipe files through transformer
-        convert.to_parquet(tf, files, args.destination, with_path=args.with_path)
+        convert.to_parquet(tf, files, args.destination,
+                           with_path=args.with_path)
     elif args.action == 'stats':
         # print out df stats
         df = pd.read_parquet(args.source)

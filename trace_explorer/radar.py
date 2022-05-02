@@ -1,7 +1,6 @@
 # taken from https://matplotlib.org/3.5.0/gallery/specialty_plots/radar_chart.html
 import numpy as np
 
-import matplotlib.pyplot as plt
 from matplotlib.patches import Circle, RegularPolygon
 from matplotlib.path import Path
 from matplotlib.projections.polar import PolarAxes
@@ -93,6 +92,5 @@ def radar_factory(num_vars, frame='circle'):
                 return {'polar': spine}
             else:
                 raise ValueError("Unknown value for 'frame': %s" % frame)
-
 
     return theta, RadarAxes

@@ -38,6 +38,7 @@ def to_parquet(tf: transformer.Transformer, files: list[str], dest: str,
                 rows.append(row)
         except Exception as e:
             print('skipped source %s, got %s' % (fpath, e))
+
     # convert into dataframe
     df = pd.DataFrame(data=rows, columns=tf.columns())
     df.to_parquet(dest)

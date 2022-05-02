@@ -1,5 +1,4 @@
 from sklearn import preprocessing, decomposition, manifold, cluster, ensemble
-from trace_explorer import radar
 import pandas as pd
 import pandas.util
 import numpy as np
@@ -193,7 +192,7 @@ def _plot_clusters(ax: plt.Axes,
     return lgd
 
 
-def _visualize_traits(
+def _visualize_traits_as_radarchart(
         ax: plt.Axes, theta: np.ndarray, df: pd.DataFrame,
         labels: np.ndarray, label: int):
     # plot baseline
@@ -203,9 +202,31 @@ def _visualize_traits(
     ax.fill(theta, df[labels == label].mean(axis=0).to_numpy(), color='b',
             alpha=0.25)
 
-    labels = ('Baseline', 'Cluster')
+    labels = ('baseline', 'cluster')
     ax.set_varlabels([_filter_column_name(s) for s in df.columns.to_list()])
     return ax.legend(labels, loc='upper right', fancybox=False, shadow=False,
+                     labelspacing=0.1, fontsize='small')
+
+
+def _visualize_traits_as_barchart(
+        ax: plt.Axes, df: pd.DataFrame,
+        labels: np.ndarray, label: int):
+    cols = sorted(df.columns.to_list())
+    baseline = df[cols].mean(axis=0).to_numpy()
+    target = df[cols][labels == label].mean(axis=0).to_numpy()
+    target_min = df[cols][labels == label].min(axis=0).to_numpy()
+    target_max = df[cols][labels == label].max(axis=0).to_numpy()
+    target_err = np.abs(np.array([target - target_min, target - target_max]))
+
+    h = 0.35
+    y = np.arange(len(df.columns))
+
+    ax.barh(y - h/2, baseline, h, label='baseline')
+    ax.barh(y + h/2, target, h, xerr=target_err, label='cluster')
+
+    ax.invert_yaxis()
+    ax.set_yticks(y, [_filter_column_name(s) for s in cols])
+    return ax.legend(loc='upper right', fancybox=False, shadow=False,
                      labelspacing=0.1, fontsize='small')
 
 
@@ -231,14 +252,13 @@ def inspect_clusters(
         cluster_path: str, clusters: np.ndarray, cluster_names: list[str],
         labels: np.ndarray):
     # Generate N smaller subplots for each cluster, could be useful
-    rd = radar.RadarAxesFactory(len(original.columns), frame='polygon')
     for i in range(len(clusters)):
         fig = plt.figure(figsize=figsize)
 
         # Generate label graph
-        gs = fig.add_gridspec(1, 2)
+        gs = fig.add_gridspec(2, 1)
         ax1 = fig.add_subplot(gs[0, 0])
-        ax2 = fig.add_subplot(gs[0, 1], projection=rd)
+        ax2 = fig.add_subplot(gs[1, 0])
 
         labels_iter = (1 if labels[j] == clusters[i] else 0
                        for j in range(len(labels)))
@@ -248,8 +268,8 @@ def inspect_clusters(
 
         lgd1 = _plot_clusters(ax1, embedding, labels_local,
                               clusters_local, description_local)
-        lgd2 = _visualize_traits(ax2, rd.theta, original, labels, clusters[i])
-        ax2.set_ylim(bottom=0, top=1)
+        lgd2 = _visualize_traits_as_barchart(ax2, original,
+                                             labels, clusters[i])
 
         plt.savefig(cluster_path % i, bbox_extra_artists=(lgd1, lgd2),
                     bbox_inches='tight')

@@ -18,7 +18,7 @@ def by_limiting_columns(
         cluster_threshold=30,
         cluster_top_n=2,
         figsize=(10, 20),
-        cluster_figsize=(20, 10),
+        cluster_figsize=(10, 20),
         cluster_path: str = 'plot_cluster_%d.pdf'):
     """
     Compares two datasets (called superset and subset) by restricting
