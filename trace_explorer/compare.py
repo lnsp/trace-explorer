@@ -18,7 +18,7 @@ def by_limiting_columns(
         cluster_threshold=30,
         cluster_top_n=2,
         figsize=(10, 20),
-        cluster_figsize=(10, 20),
+        cluster_figsize=(10, 30),
         cluster_path: str = 'plot_cluster_%d.pdf'):
     """
     Compares two datasets (called superset and subset) by restricting
@@ -33,7 +33,7 @@ def by_limiting_columns(
     cols = set(datasets[0].columns)
     for s in datasets[1:]:
         cols.intersection_update(set(s.columns))
-    cols = list(cols - set(exclude))
+    cols = sorted(list(cols - set(exclude)))
 
     concatenated = pd.concat([s[cols] for s in datasets])
     concatenated.reset_index(inplace=True, drop=True)
@@ -42,11 +42,16 @@ def by_limiting_columns(
     labels_source = np.fromiter(
         itertools.chain.from_iterable(
             (np.full(j, i) for (i, j) in enumerate(dataset_lengths))), int)
+    
+    # attempt to recover from cache
+    hashsum = hash(concatenated.to_numpy().tobytes())
+    print(hashsum)
 
-    pcad = visualize.compute_pca(concatenated)
+    pcad = visualize.compute_pca(concatenated, hashsum=hashsum)
     tsne = visualize.compute_tsne(pcad, pcad.index,
                                   n_iter=tsne_n_iter,
-                                  perplexity=tsne_perplexity)
+                                  perplexity=tsne_perplexity,
+                                  hashsum=hashsum)
 
     clusters_auto, labels_auto = \
         visualize.compute_clusters(pcad, concatenated.index,
@@ -64,7 +69,8 @@ def by_limiting_columns(
     if cluster_path is None:
         return
 
-    visualize.inspect_clusters(concatenated, tsne, cluster_figsize,
+    visualize.inspect_clusters(concatenated, pcad, tsne,
+                               cluster_figsize,
                                cluster_path, clusters_auto,
                                cluster_labels_auto, labels_auto)
 

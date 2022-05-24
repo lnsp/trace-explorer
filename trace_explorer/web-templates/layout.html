@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport"
+        content="width=500, initial-scale=1">
+  <link rel="preconnect"
+        href="https://fonts.googleapis.com">
+  <link rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+          integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+          crossorigin="anonymous"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body,
+    html {
+      min-height: 100vh;
+    }
+  </style>
+  <title>{% block title %}{% endblock %} &mdash; Trace Explorer</title>
+</head>
+
+<body>
+  <div class="min-h-screen flex">
+    <div class="p-4 h-screen bg-black text-gray-100 w-auto">
+      <div class="text-3xl font-medium py-2">Trace Explorer</div>
+      <div class="py-2">
+        <ul class="flex flex-col gap-4 text-lg text-gray-100 active:text-gray-100">
+          <li><a class="border-b-2 border-transparent hover:border-gray-100"
+               href="/convert">Convert</a></li>
+          <li><a class="border-b-2 border-transparent hover:border-gray-100"
+               href="/preprocess">Preprocess</a></li>
+          <li><a class="border-b-2 border-transparent hover:border-gray-100"
+               href="/visualize">Visualize</a></li>
+          <li><a class="border-b-2 border-transparent hover:border-gray-100"
+               href="/compare">Compare</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="w-full flex-grow">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</body>
+
+</html>

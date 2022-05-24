@@ -20,32 +20,59 @@ def numeric_subset(df: pd.DataFrame):
     return df[numeric_columns]
 
 
-def compute_pca(df: pd.DataFrame, variance_ratio=0.95):
+def compute_pca(df: pd.DataFrame, variance_ratio=0.95, print_components=True, hashsum=None):
     """
     Apply standard scaling and PCA decomposition to the given dataset
     while retaining variance by at least the specified ratio.
     """
 
-    X = preprocessing.StandardScaler().fit_transform(df)
-    X = decomposition.PCA(n_components=variance_ratio).fit_transform(X)
+    # Check local dir
+    if hashsum:
+        try:
+            return joblib.load('.cache/%d.pca.gz' % hashsum)
+        except Exception:
+            pass
+
+    stdscaler = preprocessing.StandardScaler()
+    pca = decomposition.PCA(n_components=variance_ratio)
+
+    X = stdscaler.fit_transform(df)
+    X = pca.fit_transform(X)
+
+    # Three most important features in PCA
+    if print_components:
+        print('Determined PCA decomposition components')
+        for component in pca.components_:
+            top_scalars = np.argsort(np.abs(component))
+            print('\t'.join(
+                '% 4.2f %-18s' % (
+                   (component)[i], stdscaler.feature_names_in_[i]) for i in top_scalars[-5:][::-1]))
+        print('Retained %.02f%% of variance' % (100 * np.sum(pca.explained_variance_ratio_)))
+
+    # Attempt to store in cache
+    if hashsum:
+        try:
+            if not os.path.exists('.cache'):
+                os.mkdir('.cache')
+            joblib.dump(X, '.cache/%d.pca.gz' % hashsum)
+        except Exception:
+            print('Could not cache TSNE embedding')
+
     return pd.DataFrame(data=X, index=df.index)
 
 
 def compute_tsne(df: pd.DataFrame, subset_idx: np.ndarray,
-                 perplexity=30, n_iter=5000) -> pd.DataFrame:
+                 perplexity=30, n_iter=5000, hashsum=None) -> pd.DataFrame:
     """
     Compute a 2-dimensional embedding of the given subset of data.
     """
 
-    # Compute hash of dataframe, check cache
-    h = hash(df.to_numpy().tobytes())
-
-    print(h)
     # Check local dir
-    try:
-        return joblib.load('.cache/%d.gz' % h)
-    except Exception:
-        pass
+    if hashsum:
+        try:
+            return joblib.load('.cache/%d.tsne.gz' % hashsum)
+        except Exception:
+            pass
 
     if len(subset_idx) > 100_000:
         raise 'warning: DataFrame subset may be too large'
@@ -54,12 +81,14 @@ def compute_tsne(df: pd.DataFrame, subset_idx: np.ndarray,
                       learning_rate='auto',
                       init='pca').fit_transform(df[df.index.isin(subset_idx)])
     # Attempt to store in cache
-    try:
-        if not os.path.exists('.cache'):
-            os.mkdir('.cache')
-        joblib.dump(X, '.cache/%d.gz' % h)
-    except Exception:
-        print('Could not cache TSNE embedding')
+    if hashsum:
+        try:
+            if not os.path.exists('.cache'):
+                os.mkdir('.cache')
+            joblib.dump(X, '.cache/%d.tsne.gz' % hashsum)
+        except Exception:
+            print('Could not cache TSNE embedding')
+
     return pd.DataFrame(data=X, index=filtered_idx)
 
 
@@ -208,24 +237,54 @@ def _visualize_traits_as_radarchart(
                      labelspacing=0.1, fontsize='small')
 
 
+def _visualize_traits_grouped_by_pca(
+        ax: plt.Axes, df_original: pd.DataFrame,
+        df_pcad: pd.DataFrame, labels: np.ndarray, label: int):
+    target = df_pcad[labels == label].mean(axis=0).to_numpy()
+    target_min = df_pcad[labels == label].min(axis=0).to_numpy()
+    target_max = df_pcad[labels == label].max(axis=0).to_numpy()
+
+    h = 0.35
+    y = np.arange(len(df_pcad.columns))
+
+    ax.barh(y - h/2, target_min, h/2, label='min')
+    ax.barh(y, target, h/2, label='mean')
+    ax.barh(y + h/2, target_max, h/2, label='max')
+
+    ax.invert_yaxis()
+    ax.set_yticks(y, [str(x) for x in df_pcad.columns])
+    ax.grid()
+    xabs_max = abs(max(ax.get_xlim(), key=abs))
+    ax.set_xlim(xmin=-xabs_max, xmax=xabs_max)
+
+    return ax.legend(loc='upper right', fancybox=False, shadow=False,
+                     labelspacing=0.1, fontsize='small')
+
+
 def _visualize_traits_as_barchart(
         ax: plt.Axes, df: pd.DataFrame,
         labels: np.ndarray, label: int):
     cols = sorted(df.columns.to_list())
     baseline = df[cols].mean(axis=0).to_numpy()
     target = df[cols][labels == label].mean(axis=0).to_numpy()
-    target_min = df[cols][labels == label].min(axis=0).to_numpy()
-    target_max = df[cols][labels == label].max(axis=0).to_numpy()
-    target_err = np.abs(np.array([target - target_min, target - target_max]))
+    # target_min = df[cols][labels == label].min(axis=0).to_numpy()
+    # target_max = df[cols][labels == label].max(axis=0).to_numpy()
+    # target_err = np.abs(np.array([target - target_min, target - target_max]))
+
+    if label == 0:
+        print(df[cols][labels == label].describe())
 
     h = 0.35
     y = np.arange(len(df.columns))
 
     ax.barh(y - h/2, baseline, h, label='baseline')
-    ax.barh(y + h/2, target, h, xerr=target_err, label='cluster')
+    ax.barh(y + h/2, target, h, label='cluster')
+    # ax.barh(y + h/2, target_min, h/2, label='cluster min')
+    # ax.barh(y + h, target_max, h/2, label='cluster max')
 
     ax.invert_yaxis()
     ax.set_yticks(y, [_filter_column_name(s) for s in cols])
+    ax.grid()
     return ax.legend(loc='upper right', fancybox=False, shadow=False,
                      labelspacing=0.1, fontsize='small')
 
@@ -243,12 +302,14 @@ def compare_datasets(tsne: pd.DataFrame, path: str,
     lgd2 = _plot_clusters(ax2, tsne, labels_auto, clusters_auto,
                           cluster_labels_auto)
 
-    plt.savefig(path, bbox_extra_artists=(lgd1, lgd2), bbox_inches='tight')
+    plt.savefig(path, bbox_extra_artists=(lgd1, lgd2),
+                bbox_inches='tight')
     plt.close(fig)
 
 
 def inspect_clusters(
-        original: pd.DataFrame, embedding: pd.DataFrame, figsize: tuple[int],
+        original: pd.DataFrame, pcad: pd.DataFrame,
+        embedding: pd.DataFrame, figsize: tuple[int],
         cluster_path: str, clusters: np.ndarray, cluster_names: list[str],
         labels: np.ndarray):
     # Generate N smaller subplots for each cluster, could be useful
@@ -256,9 +317,10 @@ def inspect_clusters(
         fig = plt.figure(figsize=figsize)
 
         # Generate label graph
-        gs = fig.add_gridspec(2, 1)
+        gs = fig.add_gridspec(3, 1)
         ax1 = fig.add_subplot(gs[0, 0])
         ax2 = fig.add_subplot(gs[1, 0])
+        ax3 = fig.add_subplot(gs[2, 0])
 
         labels_iter = (1 if labels[j] == clusters[i] else 0
                        for j in range(len(labels)))
@@ -270,7 +332,9 @@ def inspect_clusters(
                               clusters_local, description_local)
         lgd2 = _visualize_traits_as_barchart(ax2, original,
                                              labels, clusters[i])
+        lgd3 = _visualize_traits_grouped_by_pca(ax3, original, pcad,
+                                                labels, clusters[i])
 
-        plt.savefig(cluster_path % i, bbox_extra_artists=(lgd1, lgd2),
+        plt.savefig(cluster_path % i, bbox_extra_artists=(lgd1, lgd2, lgd3),
                     bbox_inches='tight')
         plt.close(fig)

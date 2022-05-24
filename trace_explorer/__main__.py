@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import joblib
 
-from trace_explorer import visualize, join, convert, preprocess, compare
+from trace_explorer import visualize, join, convert, preprocess, compare, web
 
 description = """
 Trace Explorer helps you analyze traces of database management systems.
@@ -114,7 +114,8 @@ parser_compare.add_argument('--superset_sample',
                             default=None, type=int,
                             help='number of samples to take from superset')
 parser_compare.add_argument('--subset',
-                            action='append', help='subset to compare to')
+                            action='append', help='subset to compare to',
+                            default=[])
 parser_compare.add_argument('--output',
                             default='plot.pdf')
 parser_compare.add_argument('--method',
@@ -154,6 +155,11 @@ parser_unroll.add_argument('--target',
 parser_unroll.add_argument('--output',
                            default='output.parquet',
                            required=True)
+
+parser_web = subparsers.add_parser('web')
+parser_web.add_argument('--dir', default=os.path.curdir, help='data directory')
+parser_web.add_argument('--host', default='localhost', help='host address to listen on')
+parser_web.add_argument('--port', default=5000, type=int, help='port to listen on')
 
 parser.add_argument('-v', '--verbose', help='increase output verbosity')
 
@@ -256,6 +262,9 @@ def main():
         df = pd.read_parquet(args.source)
         df = df.sample(n=args.n).reset_index(drop=True)
         df.to_parquet(args.output)
+    elif args.action == 'web':
+        # start web service
+        web.serve(args.dir, args.host, args.port)
 
 
 if __name__ == "__main__":

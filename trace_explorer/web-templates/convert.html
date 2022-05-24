@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+
+{% block title %}Convert{% endblock %}
+
+{% block content %}
+<div class="p-4">
+  <form>
+    <div class="flex gap-2 items-center">
+      <div class="w-8 h-8 flex items-center justify-center text-bold bg-black text-white">1</div>
+      <div>
+        <label for="transformer">Use</label>
+        <select name="transformer" class="border border-gray-900 h-8 px-2 mx-2">
+          <option>Snowflake</option>
+          <option>MSSQL</option>
+          <option>Custom</option>
+        </select>
+        <label for="transformer">to transform the data.</label>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}
