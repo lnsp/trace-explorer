@@ -1,18 +1,20 @@
 {% extends "layout.html" %}
 
-{% block title %}Visualize{% endblock %}
+{% block title %}Compare {% endblock %}
 
 {% block content %}
+
 <div class="h-screen w-full flex">
   <div class="p-4 border-r border-gray-300">
     <form class="flex flex-col gap-4 h-full">
       <div class="flex gap-2 items-center text-lg font-medium">
-        <label for="source">Dataset</label>
+        <label for="source">Datasets</label>
       </div>
       <div class="">
-        <select name="source"
-                id="source-selector"
-                class="border border-gray-900 h-8 px-2 w-full">
+        <select name="sources"
+                id="sources-selector"
+                multiple
+                class="border border-gray-900 h-12 px-2 w-full h-24 flex-grow">
           <option>mssql.parquet</option>
           <option>snowset.parquet</option>
         </select>
@@ -99,7 +101,7 @@
               </path>
             </svg>
           </div>
-          Visualize
+          Compare
         </button>
       </div>
     </form>
@@ -133,7 +135,7 @@
         <input type="text" class="hidden" id="cmd-copy-buffer">
       </div>
       <div class="monospace bg-gray-100 text-sm overflow-x-auto p-2 flex gap-4 text-gray-900 underline-offset-4">
-        $ <pre id="cmd-string">trace_explorer visualize --source <span id="cmd-source" class="text-gray-600 underline decoration-dashed"></span> --threshold <span id="cmd-threshold" class="text-gray-600 underline decoration-dashed"></span> --perplexity <span id="cmd-perplexity" class="text-gray-600 underline decoration-dashed"></span> --n_iter <span id="cmd-iterations" class="text-gray-600 underline decoration-dashed"></span><span id="cmd-exclude"></span></span></pre>
+        $ <pre id="cmd-string">trace_explorer compare --source <span id="cmd-source" class="text-gray-600 underline decoration-dashed"></span> --threshold <span id="cmd-threshold" class="text-gray-600 underline decoration-dashed"></span> --perplexity <span id="cmd-perplexity" class="text-gray-600 underline decoration-dashed"></span> --n_iter <span id="cmd-iterations" class="text-gray-600 underline decoration-dashed"></span><span id="cmd-exclude"></span></span></pre>
       </div>
     </div>
   </div>
@@ -222,4 +224,5 @@
   })
 
 </script>
+
 {% endblock %}

@@ -30,10 +30,15 @@ def show_visualize_form():
     return render_template('visualize.html')
 
 
+@app.route('/compare', methods=['GET'])
+def show_compare_form():
+    return render_template('compare.html')
+
+
 @app.route('/list_sources', methods=['POST'])
 def list_sources():
     # list all sources in directory
-    return {'sources': glob.glob(os.path.join(data_directory, '*.parquet')) }
+    return {'sources': glob.glob(os.path.join(data_directory, '*.parquet'))}
 
 
 @app.route('/list_source_columns', methods=['POST'])
