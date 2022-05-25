@@ -157,9 +157,12 @@ parser_unroll.add_argument('--output',
                            required=True)
 
 parser_web = subparsers.add_parser('web')
-parser_web.add_argument('--dir', default=os.path.curdir, help='data directory')
-parser_web.add_argument('--host', default='localhost', help='host address to listen on')
-parser_web.add_argument('--port', default=5000, type=int, help='port to listen on')
+parser_web.add_argument('--dir', default=os.path.curdir,
+                        help='data directory')
+parser_web.add_argument('--host', default='localhost',
+                        help='host address to listen on')
+parser_web.add_argument('--port', default=5000, type=int,
+                        help='port to listen on')
 
 parser.add_argument('-v', '--verbose', help='increase output verbosity')
 
