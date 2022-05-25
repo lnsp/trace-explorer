@@ -133,7 +133,7 @@
         <input type="text" class="hidden" id="cmd-copy-buffer">
       </div>
       <div class="monospace bg-gray-100 text-sm overflow-x-auto p-2 flex gap-4 text-gray-900 underline-offset-4">
-        $ <pre id="cmd-string">trace_explorer visualize --source <span id="cmd-source" class="text-gray-600 underline decoration-dashed"></span> --threshold <span id="cmd-threshold" class="text-gray-600 underline decoration-dashed"></span> --perplexity <span id="cmd-perplexity" class="text-gray-600 underline decoration-dashed"></span> --n_iter <span id="cmd-iterations" class="text-gray-600 underline decoration-dashed"></span><span id="cmd-exclude"></span></span></pre>
+        $ <pre id="cmd-string">trace_explorer visualize --source <span id="cmd-source" class="text-gray-600 underline decoration-dashed"></span> --threshold <span id="cmd-threshold" class="text-gray-600 underline decoration-dashed"></span> --perplexity <span id="cmd-perplexity" class="text-gray-600 underline decoration-dashed"></span> --n_iter <span id="cmd-iterations" class="text-gray-600 underline decoration-dashed"></span><span id="cmd-exclude" class=""></span></pre>
       </div>
     </div>
   </div>
@@ -167,7 +167,9 @@
     // Build list of elements
     $('#cmd-exclude').empty();
     for (let s of selected) {
-      $('#cmd-exclude').append($("<span>").text(` --exclude ${s}`))
+      let col = $('<span>').addClass('text-gray-600 underline decoration-dashed').text(s);
+      let parent = $('<span>').text(' --exclude ').append(col);
+      $('#cmd-exclude').append(parent);
     }
   })
 
