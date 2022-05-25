@@ -60,6 +60,8 @@ setuptools.setup(
         'zipp==3.8.0',
     ],
     packages=['trace_explorer'],
+    package_data={'trace_explorer': ['web-templates/*.html', 'transformers/*.py']},
+    include_package_data=True,
     entry_points={
         'console_scripts': [
             "trace_explorer = trace_explorer.__main__:main"
