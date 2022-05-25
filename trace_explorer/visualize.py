@@ -29,7 +29,8 @@ def compute_pca(df: pd.DataFrame, variance_ratio=0.95, print_components=True, ha
     # Check local dir
     if hashsum:
         try:
-            return joblib.load('.cache/%d.pca.gz' % hashsum)
+            cached = joblib.load('.cache/%d.pca.gz' % hashsum)
+            return pd.DataFrame(data=cached, index=df.index)
         except Exception:
             pass
 

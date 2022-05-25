@@ -19,10 +19,10 @@ def by_limiting_columns(
         cluster_top_n=2,
         figsize=(10, 20),
         cluster_figsize=(10, 30),
-        cluster_path: str = 'plot_cluster_%d.pdf'):
+        cluster_path: str = 'plot_cluster_%d.pdf') -> int:
     """
     Compares two datasets (called superset and subset) by restricting
-    the column space to the subset columns.
+    the column space to the subset columns. Returns number of clusters.
     """
 
     print('Comparing datasets by limiting columns '
@@ -73,6 +73,7 @@ def by_limiting_columns(
                                cluster_figsize,
                                cluster_path, clusters_auto,
                                cluster_labels_auto, labels_auto)
+    return len(cluster_labels_auto)
 
 
 def by_imputing_columns(superset: pd.DataFrame, subset: pd.DataFrame,

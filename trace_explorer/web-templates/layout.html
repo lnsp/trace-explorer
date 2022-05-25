@@ -37,25 +37,23 @@
 </head>
 
 <body>
-  <div class="min-h-screen flex">
-    <div class="p-4 h-screen bg-black text-gray-100 w-auto">
+  <div class="min-h-screen max-h-screen flex relative max-w-screen">
+    <div class="p-4 h-screen bg-black text-gray-100 w-64 shrink-0">
       <div class="text-3xl font-medium py-2">Trace Explorer</div>
       <div class="py-2">
-        <ul class="flex flex-col gap-4 text-lg text-gray-100 active:text-gray-100">
-          <li><a class="border-b-2 border-transparent hover:border-gray-100"
+        <ul class="flex flex-col gap-4 text-lg text-gray-400">
+          <li><a class="border-b-2 border-transparent hover:border-gray-100 {% if active == 'convert' %}text-gray-100{% endif %}"
                href="/convert">Convert</a></li>
-          <li><a class="border-b-2 border-transparent hover:border-gray-100"
+          <li><a class="border-b-2 border-transparent hover:border-gray-100 {% if active == 'preprocess' %}text-gray-100{% endif %}"
                href="/preprocess">Preprocess</a></li>
-          <li><a class="border-b-2 border-transparent hover:border-gray-100"
+          <li><a class="border-b-2 border-transparent hover:border-gray-100 {% if active == 'visualize' %}text-gray-100{% endif %}"
                href="/visualize">Visualize</a></li>
-          <li><a class="border-b-2 border-transparent hover:border-gray-100"
+          <li><a class="border-b-2 border-transparent hover:border-gray-100 {% if active == 'compare' %}text-gray-100{% endif %}"
                href="/compare">Compare</a></li>
         </ul>
       </div>
     </div>
-    <div class="w-full flex-grow">
-      {% block content %}{% endblock %}
-    </div>
+    {% block content %}{% endblock %}
   </div>
 </body>
 
