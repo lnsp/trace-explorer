@@ -29,6 +29,8 @@ trace_explorer web
 
 and a web server will run on port 5000.
 
+> Note: The web UI may not expose all features of the command-line interface.
+
 ## Command-line interface
 
 The first step in exploring your measurements is data preparation. Trace Explorer assist you in a multitude of ways, by automatically exploring different strategies to maximize dataset variance.
