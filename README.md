@@ -19,7 +19,17 @@ rm trace-explorer.zip trace_explorer-1.0-py3-none-any.whl
 
 You can also go to [the latest Build & Lint workflow](https://github.com/lnsp/trace-explorer/actions/workflows/lint.yml) and download the latest `trace-explorer.zip` under the *Artifacts* section manually.
 
-## Usage
+## Web interface
+
+Trace Explorer comes with an integrated web interface. To start it on your local machine, enter
+
+```
+trace_explorer web
+```
+
+and a web server will run on port 5000.
+
+## Command-line interface
 
 The first step in exploring your measurements is data preparation. Trace Explorer assist you in a multitude of ways, by automatically exploring different strategies to maximize dataset variance.
 
