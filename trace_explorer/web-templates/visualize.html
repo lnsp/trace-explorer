@@ -155,12 +155,15 @@
   })
 
   $('#source-selector').change((event) => {
+    if (!event.target.value) return;
+
     $.post('/list_source_columns', { source: event.target.value }, (data) => {
       $('#column-selector').empty();
       for (let s of data.columns) {
         $('#column-selector').append($("<option>").val(s).text(s))
       }
     })
+
     $('#cmd-source').text(event.target.value)
   })
   $('#column-selector').change((event) => {
@@ -223,6 +226,9 @@
         $('#in-progress').addClass('hidden')
         $('#go-submit').removeClass('hidden')
         $('#visualize-submit').attr('disabled', false)
+      },
+      error: (xhr, status, text) => {
+        showErrorModal(text)
       }
     })
   })

@@ -19,7 +19,8 @@ def by_limiting_columns(
         cluster_top_n=2,
         figsize=(10, 20),
         cluster_figsize=(10, 30),
-        cluster_path: str = 'plot_cluster_%d.pdf') -> int:
+        cluster_path: str = 'plot_cluster_%d.pdf',
+        separate_overview: bool = False) -> int:
     """
     Compares two datasets (called superset and subset) by restricting
     the column space to the subset columns. Returns number of clusters.
@@ -61,11 +62,18 @@ def by_limiting_columns(
                                  clusters_auto, labels_auto,
                                  top_n_columns=cluster_top_n)
 
-    visualize.compare_datasets(tsne, path,
-                               labels_source, clusters_source,
-                               cluster_labels_source,
-                               labels_auto, clusters_auto,
-                               cluster_labels_auto)
+    if separate_overview:
+        visualize.visualize(tsne, labels_source, clusters_source,
+                            cluster_labels_source, path)
+        visualize.visualize(tsne, labels_source, clusters_source,
+                            cluster_labels_source, cluster_path % -1)
+    else:
+        visualize.compare_datasets(
+            tsne, path,
+            labels_source, clusters_source,
+            cluster_labels_source,
+            labels_auto, clusters_auto,
+            cluster_labels_auto)
     if cluster_path is None:
         return
 

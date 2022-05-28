@@ -1,7 +1,6 @@
 # Do web stuff here
 import os
-from re import A
-from flask import Flask, render_template, request, send_file
+from flask import Flask, render_template, request
 import pandas as pd
 import glob
 import pdf2image
@@ -9,7 +8,6 @@ from trace_explorer import visualize, compare
 from io import BytesIO
 from base64 import b64encode
 import tempfile
-import shutil
 
 template_path = os.path.join(os.path.dirname(__loader__.path), 'web-templates')
 app = Flask(__name__, template_folder=template_path)
@@ -83,21 +81,27 @@ def compare_with_params():
     datasets = [pd.read_parquet(s) for s in sources]
     overview_path = os.path.join(tempdir, 'overview.png')
     cluster_path = os.path.join(tempdir, 'cluster_%d.png')
-    n_clusters = compare.by_limiting_columns(datasets, excluded_columns, overview_path,
-                                             iterations, perplexity, sources, threshold,
-                                             cluster_path=cluster_path)
+    n_clusters = compare.by_limiting_columns(
+        datasets, excluded_columns, overview_path,
+        iterations, perplexity, sources, threshold,
+        cluster_path=cluster_path, separate_overview=True)
+
     # read pngs into base64
     overview_data = None
+    cluster_overview_data = None
     cluster_data = []
 
     with open(overview_path, 'rb') as f:
         overview_data = f.read()
+    with open(cluster_path % -1, 'rb') as f:
+        cluster_overview_data = f.read()
     for i in range(n_clusters):
         with open(cluster_path % i, 'rb') as f:
             cluster_data.append(f.read())
     
     return {
         'overview': b64encode(overview_data).decode('utf-8'),
+        'clusters_overview': b64encode(cluster_overview_data).decode('utf-8'),
         'clusters': [b64encode(c).decode('utf-8') for c in cluster_data],
     }
 

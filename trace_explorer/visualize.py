@@ -184,6 +184,7 @@ def visualize(df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray,
             color = plt.cm.tab20(label)
         else:
             color = plt.cm.get_cmap('hsv')(label / len(clusters))
+        print(len(c))
         plt.scatter(c[0], c[1], c=[color] * len(c),
                     s=2, label=text)
         if label_graph:
@@ -295,7 +296,6 @@ def compare_datasets(tsne: pd.DataFrame, path: str,
                      cluster_labels_source: np.ndarray,
                      labels_auto: np.ndarray, clusters_auto: np.ndarray,
                      cluster_labels_auto: np.ndarray):
-
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 20))
 
     lgd1 = _plot_clusters(ax1, tsne, labels_source, clusters_source,

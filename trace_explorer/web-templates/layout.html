@@ -37,9 +37,27 @@
 </head>
 
 <body>
+  <div id="error-modal" class="fixed w-screen hidden h-screen p-5 z-10 flex flex-col items-center bg-black/10 backdrop-blur-sm">
+    <div class="border-2 border-black bg-white shadow-lg p-5 text-lg flex items-center gap-4">
+      <svg xmlns="http://www.w3.org/2000/svg" class="text-black h-7 w-7" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+      </svg>
+      <span id="error-message">Something has gone wrong.</span>
+    </div>
+  </div>
+  <!-- Add error modal logic -->
+  <script>
+    $('#error-modal').on('click', (event) => {
+      $('#error-modal').addClass('hidden')
+    })
+    function showErrorModal(content) {
+      $('#error-modal').removeClass('hidden');
+      $('#error-message').text(content);
+    }
+  </script>
   <div class="min-h-screen max-h-screen flex relative max-w-screen">
-    <div class="p-4 h-screen bg-black text-gray-100 w-64 shrink-0">
-      <div class="text-3xl font-medium py-2">Trace Explorer</div>
+    <div class="p-4 h-screen bg-black text-gray-100 w-40 shrink-0">
+      <div class="text-2xl font-medium py-2">Trace<br>Explorer</div>
       <div class="py-2">
         <ul class="flex flex-col gap-4 text-lg text-gray-400">
           <li><a class="border-b-2 border-transparent hover:border-gray-100 {% if active == 'convert' %}text-gray-100{% endif %}"
@@ -55,6 +73,7 @@
     </div>
     {% block content %}{% endblock %}
   </div>
+
 </body>
 
 </html>
