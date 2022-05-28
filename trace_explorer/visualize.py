@@ -184,14 +184,13 @@ def visualize(df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray,
             color = plt.cm.tab20(label)
         else:
             color = plt.cm.get_cmap('hsv')(label / len(clusters))
-        print(len(c))
         plt.scatter(c[0], c[1], c=[color] * len(c),
                     s=2, label=text)
         if label_graph:
             m = c.median()
             plt.text(m[0], m[1], str(label), weight='bold')
     lgd = plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
-                     fancybox=False, shadow=False, ncol=2)
+                     fancybox=False, shadow=False, ncol=1)
     for i in range(len(lgd.legendHandles)):
         lgd.legendHandles[i]._sizes = [30]
     plt.savefig(path, bbox_extra_artists=(lgd,), bbox_inches='tight')

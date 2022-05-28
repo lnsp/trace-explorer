@@ -4,8 +4,9 @@ import os
 import pandas as pd
 import numpy as np
 import joblib
+import matplotlib
 
-from trace_explorer import visualize, join, convert, preprocess, compare, web
+from trace_explorer import visualize, join, convert, preprocess, compare, web, aggregate
 
 description = """
 Trace Explorer helps you analyze traces of database management systems.
@@ -15,6 +16,10 @@ your dataset and visualize and compare traces.
 
 parser = argparse.ArgumentParser(prog='trace-explorer',
                                  description=description)
+parser.add_argument('--fontsize', help='globally set output font size',
+                    type=int, default=12)
+parser.add_argument('--dpi', help='globally set dpi', type=int, default=140)
+
 subparsers = parser.add_subparsers(dest='action', title='actions')
 
 parser_stats = subparsers.add_parser('stats',
@@ -164,11 +169,28 @@ parser_web.add_argument('--host', default='localhost',
 parser_web.add_argument('--port', default=5000, type=int,
                         help='port to listen on')
 
+parser_agg = subparsers.add_parser('aggregate')
+parser_agg.add_argument('--source', required=True,
+                        help='source dataset to process')
+parser_agg.add_argument('--type', required=True, choices=['boxplot', 'pdf'])
+parser_agg.add_argument('--group', required=True)
+parser_agg.add_argument('--value', required=True)
+parser_agg.add_argument('--yscale', default=None)
+parser_agg.add_argument('--xscale', default=None)
+parser_agg.add_argument('--bins', default=10, type=int)
+parser_agg.add_argument('--bins_min', default=None, type=int)
+parser_agg.add_argument('--bins_max', default=None, type=int)
+parser_agg.add_argument('--output', default='plot.pdf')
+
 parser.add_argument('-v', '--verbose', help='increase output verbosity')
 
 
 def main():
     args = parser.parse_args()
+
+    # configure matplotlib fontsize
+    matplotlib.rc('font', size=args.fontsize)
+    matplotlib.rc('figure', dpi=args.dpi)
 
     if args.action == 'unroll':
         # open dataframe
@@ -236,16 +258,25 @@ def main():
                 tsne_perplexity=args.tsne_perplexity)
         elif args.method == 'impute':
             print('not implemented')
-            # compare.by_imputing_columns(superset, subsets[0],
-            #                            args.exclude_superset,
-            #                            args.exclude_subset, args.output,
-            #                            [args.superset, args.subset],
-            #                            cluster_threshold=args.threshold,
-            #                            cluster_top_n=args.top_n)
+            compare.by_imputing_columns(superset, subsets[0],
+                                        args.exclude_superset,
+                                        args.exclude_subset, args.output,
+                                        [args.superset, args.subset],
+                                        cluster_threshold=args.threshold,
+                                        cluster_top_n=args.top_n)
     elif args.action == 'clean':
         df = pd.read_parquet(args.source)
         df = preprocess.filter_by_zscore(df, args.zscore, args.exclude)
         df.to_parquet(args.output if args.output is not None else args.source)
+    elif args.action == 'aggregate':
+        df = pd.read_parquet(args.source, columns=[args.group, args.value])
+        if args.type == 'boxplot':
+            aggregate.boxplots(df, args.group, args.value, yscale=args.yscale,
+                               path=args.output)
+        elif args.type == 'pdf':
+            aggregate.pdf(df, args.group, args.value, yscale=args.yscale,
+                          path=args.output, xscale=args.xscale,
+                          xnums=args.bins, xrange=(args.bins_min, args.bins_max))
     elif args.action == "convert":
         # load transformer module
         tf = convert.load_transformer("convert_plugin", args.using)

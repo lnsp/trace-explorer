@@ -65,8 +65,8 @@ def by_limiting_columns(
     if separate_overview:
         visualize.visualize(tsne, labels_source, clusters_source,
                             cluster_labels_source, path)
-        visualize.visualize(tsne, labels_source, clusters_source,
-                            cluster_labels_source, cluster_path % -1)
+        visualize.visualize(tsne, labels_auto, clusters_auto,
+                            cluster_labels_auto, cluster_path % -1)
     else:
         visualize.compare_datasets(
             tsne, path,
