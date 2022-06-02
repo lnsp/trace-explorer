@@ -48,6 +48,14 @@ stat_map = {
     'compilationTime': 'compilationTime',
     'scheduleTime': 'scheduleTime',
 }
+info_map = {
+    'startTime': 'startTime',
+    'endTime': 'endTime'
+}
+info_cols = sorted([
+    'startTime',
+    'endTime'
+])
 stat_cols = sorted([
     'scanFiles',
     'scanBytes',
@@ -59,7 +67,7 @@ stat_cols = sorted([
 
 class Transformer(transformer.Transformer):
     def columns(self):
-        return ['queryNumber', 'queryId'] + stat_cols + op_cols
+        return ['queryNumber', 'queryId'] + stat_cols + info_cols + op_cols
 
     def transform(self, content, path=None):
         # expect merged metadata file
@@ -69,11 +77,12 @@ class Transformer(transformer.Transformer):
         info_json = json.loads(obj['info'])
         profile_json = json.loads(obj['profile'])
 
-        info_stats = info_json['data']['queries'][0]['stats']
+        info_stats = info_json['data']['queries'][0]
+        detail_stats = info_json['data']['queries'][0]['stats']
         query_stats = [
             queryNumber,
             info_json['data']['queries'][0]['id']
-        ] + [info_stats[stat_map[c]] for c in stat_cols]
+        ] + [detail_stats[stat_map[c]] for c in stat_cols] + [info_stats[info_map[c]] for c in info_cols]
 
         # compute total execution time
         total_time = 0.0
