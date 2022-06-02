@@ -4,7 +4,7 @@ from flask import Flask, render_template, request
 import pandas as pd
 import glob
 import pdf2image
-from trace_explorer import visualize, compare
+from trace_explorer import visualize, compare, preprocess
 from io import BytesIO
 from base64 import b64encode
 import tempfile
@@ -121,15 +121,17 @@ def visualize_with_params():
     df = pd.read_parquet(os.path.join(data_directory, source))
     # exclude columns
     df = df[list(set(df.columns) - set(excluded_columns))]
+    hashsum = preprocess.hash(df)
     # compute pca
-    df_pcad = visualize.compute_pca(df)
+    df_pcad = visualize.compute_pca(df, hashsum=hashsum)
     clusters, labels = visualize.compute_clusters(df_pcad, df.index,
-                                                  threshold=threshold)
+                                                  threshold=threshold,
+                                                  hashsum=hashsum)
     cluster_labels = visualize.label_clusters(df, df.index, clusters, labels)
 
     df_tsne = visualize.compute_tsne(df_pcad, df.index,
                                      perplexity=perplexity,
-                                     n_iter=iterations)
+                                     n_iter=iterations, hashsum=hashsum)
 
     # save visualization as temporary file
     # TODO: Find better path naming scheme

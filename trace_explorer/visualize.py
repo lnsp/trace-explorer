@@ -28,11 +28,9 @@ def compute_pca(df: pd.DataFrame, variance_ratio=0.95, print_components=True, ha
 
     # Check local dir
     if hashsum:
-        try:
-            cached = joblib.load('.cache/%d.pca.gz' % hashsum)
-            return pd.DataFrame(data=cached, index=df.index)
-        except Exception:
-            pass
+        obj = _restore_from_cache('%s.pca.gz' % hashsum)
+        if obj is not None:
+            return pd.DataFrame(data=obj, index=df.index)
 
     stdscaler = preprocessing.StandardScaler()
     pca = decomposition.PCA(n_components=variance_ratio)
@@ -52,12 +50,7 @@ def compute_pca(df: pd.DataFrame, variance_ratio=0.95, print_components=True, ha
 
     # Attempt to store in cache
     if hashsum:
-        try:
-            if not os.path.exists('.cache'):
-                os.mkdir('.cache')
-            joblib.dump(X, '.cache/%d.pca.gz' % hashsum)
-        except Exception:
-            print('Could not cache TSNE embedding')
+        _store_in_cache(X, '%s.pca.gz' % hashsum)
 
     return pd.DataFrame(data=X, index=df.index)
 
@@ -67,44 +60,67 @@ def compute_tsne(df: pd.DataFrame, subset_idx: np.ndarray,
     """
     Compute a 2-dimensional embedding of the given subset of data.
     """
+    if len(subset_idx) > 100_000:
+        raise 'warning: DataFrame subset may be too large'
+
+    filtered_idx = df[df.index.isin(subset_idx)].index
 
     # Check local dir
     if hashsum:
-        try:
-            return joblib.load('.cache/%d.tsne.gz' % hashsum)
-        except Exception:
-            pass
+        obj = _restore_from_cache('%s.%d.%d.tsne.gz' % (hashsum, perplexity, n_iter))
+        if obj is not None:
+            return pd.DataFrame(data=obj, index=filtered_idx)
 
-    if len(subset_idx) > 100_000:
-        raise 'warning: DataFrame subset may be too large'
-    filtered_idx = df[df.index.isin(subset_idx)].index
     X = manifold.TSNE(perplexity=perplexity, n_iter=n_iter,
                       learning_rate='auto',
                       init='pca').fit_transform(df[df.index.isin(subset_idx)])
     # Attempt to store in cache
     if hashsum:
-        try:
-            if not os.path.exists('.cache'):
-                os.mkdir('.cache')
-            joblib.dump(X, '.cache/%d.tsne.gz' % hashsum)
-        except Exception:
-            print('Could not cache TSNE embedding')
+        _store_in_cache(X, '%s.%d.%d.tsne.gz' % (hashsum, perplexity, n_iter))
 
     return pd.DataFrame(data=X, index=filtered_idx)
 
 
+def _restore_from_cache(path):
+    try:
+        obj = joblib.load(os.path.join('.cache', path))
+        print('Restored %s from cache' % path)
+        return obj
+    except Exception:
+        return None
+
+
+def _store_in_cache(obj, path):
+    try:
+        if not os.path.exists('.cache'):
+            os.mkdir('.cache')
+        joblib.dump(obj, os.path.join('.cache', path))
+    except Exception:
+        print('Could not cache %s' % path)
+
+
 def compute_clusters(df: pd.DataFrame, subset_idx: np.ndarray,
-                     threshold=50) -> tuple[np.ndarray, np.ndarray]:
+                     threshold=50, hashsum=None) -> tuple[np.ndarray, np.ndarray]:
     """
     Find clusters using ward-linkage hierarchical clustering and
     returns a list of clusters and labels.
     """
+    if hashsum:
+        obj = _restore_from_cache('%s.%d.clusters.gz' % (hashsum, threshold))
+        if obj is not None:
+            clusters, labels = obj
+            return clusters, labels
+
     agg = cluster.AgglomerativeClustering(n_clusters=None,
                                           distance_threshold=threshold)
     agg.fit(df[df.index.isin(subset_idx)])
     labels = agg.labels_
 
     clusters = np.unique(labels)
+
+    if hashsum:
+        _store_in_cache((clusters, labels), '%s.%d.clusters.gz' % (hashsum, threshold))
+
     return clusters, labels
 
 
@@ -175,7 +191,8 @@ def generalize_clusters(df: pd.DataFrame, df_labels: np.ndarray):
 
 def visualize(df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray,
               cluster_labels: list[str], path: str, figsize=(10, 10),
-              label_graph=False):
+              label_graph=False, legend=(0.5, -0.05), legendloc='upper center',
+              legendtitle=None):
     plt.figure(figsize=figsize)
     for label, text in zip(clusters, cluster_labels):
         c = df[df_labels == label]
@@ -189,8 +206,8 @@ def visualize(df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray,
         if label_graph:
             m = c.median()
             plt.text(m[0], m[1], str(label), weight='bold')
-    lgd = plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
-                     fancybox=False, shadow=False, ncol=1)
+    lgd = plt.legend(loc=legendloc, bbox_to_anchor=legend,
+                     fancybox=False, shadow=False, ncol=1, title=legendtitle)
     for i in range(len(lgd.legendHandles)):
         lgd.legendHandles[i]._sizes = [30]
     plt.savefig(path, bbox_extra_artists=(lgd,), bbox_inches='tight')
@@ -200,7 +217,7 @@ def _plot_clusters(ax: plt.Axes,
                    df: pd.DataFrame, df_labels: np.ndarray,
                    clusters: np.ndarray,
                    cluster_labels: list[str],
-                   label_graph=False):
+                   label_graph=False, show_legend=True):
     for label, text in zip(clusters, cluster_labels):
         c = df[df_labels == label]
         # choose color scheme based on number of labels
@@ -215,11 +232,12 @@ def _plot_clusters(ax: plt.Axes,
         if label_graph:
             m = c.median()
             ax.text(m[0], m[1], str(label), weight='bold')
-    lgd = ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
-                    fancybox=False, shadow=False, ncol=2)
-    for i in range(len(lgd.legendHandles)):
-        lgd.legendHandles[i]._sizes = [30]
-    return lgd
+    if show_legend:
+        lgd = ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+                        fancybox=False, shadow=False, ncol=2)
+        for i in range(len(lgd.legendHandles)):
+            lgd.legendHandles[i]._sizes = [30]
+        return lgd
 
 
 def _visualize_traits_as_radarchart(
@@ -241,16 +259,16 @@ def _visualize_traits_as_radarchart(
 def _visualize_traits_grouped_by_pca(
         ax: plt.Axes, df_original: pd.DataFrame,
         df_pcad: pd.DataFrame, labels: np.ndarray, label: int):
-    target = df_pcad[labels == label].mean(axis=0).to_numpy()
-    target_min = df_pcad[labels == label].min(axis=0).to_numpy()
-    target_max = df_pcad[labels == label].max(axis=0).to_numpy()
+    target = df_pcad[labels == label].quantile(axis=0, q=[0.25, 0.5, 0.75]).to_numpy()
 
     h = 0.35
     y = np.arange(len(df_pcad.columns))
 
-    ax.barh(y - h/2, target_min, h/2, label='min')
-    ax.barh(y, target, h/2, label='mean')
-    ax.barh(y + h/2, target_max, h/2, label='max')
+    ax.barh(y - h/2, target[0], h/2, label='25%')
+    ax.barh(y, target[1], h/2, label='50%')
+    ax.barh(y + h/2, target[2], h/2, label='75%')
+    ax.set_ylabel('component')
+    ax.set_xlabel('value')
 
     ax.invert_yaxis()
     ax.set_yticks(y, [str(x) for x in df_pcad.columns])
@@ -259,21 +277,21 @@ def _visualize_traits_grouped_by_pca(
     ax.set_xlim(xmin=-xabs_max, xmax=xabs_max)
 
     return ax.legend(loc='upper right', fancybox=False, shadow=False,
-                     labelspacing=0.1, fontsize='small')
+                     labelspacing=0.1, title='quantiles')
 
 
 def _visualize_traits_as_barchart(
         ax: plt.Axes, df: pd.DataFrame,
         labels: np.ndarray, label: int):
     cols = sorted(df.columns.to_list())
-    baseline = df[cols].mean(axis=0).to_numpy()
-    target = df[cols][labels == label].mean(axis=0).to_numpy()
+    baseline = df[cols].median(axis=0).to_numpy()
+    target = df[cols][labels == label].median(axis=0).to_numpy()
     # target_min = df[cols][labels == label].min(axis=0).to_numpy()
     # target_max = df[cols][labels == label].max(axis=0).to_numpy()
     # target_err = np.abs(np.array([target - target_min, target - target_max]))
 
-    if label == 0:
-        print(df[cols][labels == label].describe())
+    # if label == 0:
+    #     print(df[cols][labels == label].describe())
 
     h = 0.35
     y = np.arange(len(df.columns))
@@ -285,9 +303,10 @@ def _visualize_traits_as_barchart(
 
     ax.invert_yaxis()
     ax.set_yticks(y, [_filter_column_name(s) for s in cols])
+    ax.set_xlabel('value')
     ax.grid()
     return ax.legend(loc='upper right', fancybox=False, shadow=False,
-                     labelspacing=0.1, fontsize='small')
+                     labelspacing=0.1)
 
 
 def compare_datasets(tsne: pd.DataFrame, path: str,
@@ -328,13 +347,13 @@ def inspect_clusters(
         clusters_local = np.array([0, 1])
         description_local = np.array(['all', cluster_names[i]])
 
-        lgd1 = _plot_clusters(ax1, embedding, labels_local,
-                              clusters_local, description_local)
+        _plot_clusters(ax1, embedding, labels_local,
+                       clusters_local, description_local, show_legend=None)
         lgd2 = _visualize_traits_as_barchart(ax2, original,
                                              labels, clusters[i])
         lgd3 = _visualize_traits_grouped_by_pca(ax3, original, pcad,
                                                 labels, clusters[i])
 
-        plt.savefig(cluster_path % i, bbox_extra_artists=(lgd1, lgd2, lgd3),
+        plt.savefig(cluster_path % i, bbox_extra_artists=(lgd2, lgd3),
                     bbox_inches='tight')
         plt.close(fig)

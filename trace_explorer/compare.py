@@ -4,6 +4,7 @@ from trace_explorer import visualize
 import sklearn.impute
 from sklearn.experimental import enable_iterative_imputer
 import itertools
+import hashlib
 
 # Required to disable flake8 import warning
 enable_iterative_imputer
@@ -17,10 +18,12 @@ def by_limiting_columns(
         cluster_labels_source=['superset', 'subset'],
         cluster_threshold=30,
         cluster_top_n=2,
-        figsize=(10, 20),
+        figsize=(10, 10),
         cluster_figsize=(10, 30),
-        cluster_path: str = 'plot_cluster_%d.pdf',
-        separate_overview: bool = False) -> int:
+        cluster_path: str = 'cluster_%d.pdf',
+        separate_overview: bool = False,
+        cachekey=None,
+        legendtitle=None) -> int:
     """
     Compares two datasets (called superset and subset) by restricting
     the column space to the subset columns. Returns number of clusters.
@@ -45,8 +48,10 @@ def by_limiting_columns(
             (np.full(j, i) for (i, j) in enumerate(dataset_lengths))), int)
     
     # attempt to recover from cache
-    hashsum = hash(concatenated.to_numpy().tobytes())
-    print(hashsum)
+    hashsum = hashlib.sha256(pd.util.hash_pandas_object(concatenated, index=True).values).hexdigest()
+    if cachekey is not None:
+        hashsum = cachekey
+    print('Dataset has hashsum %s' % hashsum)
 
     pcad = visualize.compute_pca(concatenated, hashsum=hashsum)
     tsne = visualize.compute_tsne(pcad, pcad.index,
@@ -56,7 +61,8 @@ def by_limiting_columns(
 
     clusters_auto, labels_auto = \
         visualize.compute_clusters(pcad, concatenated.index,
-                                   threshold=cluster_threshold)
+                                   threshold=cluster_threshold,
+                                   hashsum=hashsum)
     cluster_labels_auto = \
         visualize.label_clusters(concatenated, concatenated.index,
                                  clusters_auto, labels_auto,
@@ -64,9 +70,13 @@ def by_limiting_columns(
 
     if separate_overview:
         visualize.visualize(tsne, labels_source, clusters_source,
-                            cluster_labels_source, path)
+                            cluster_labels_source, path, figsize=figsize,
+                            legend=(1.04, 0.5), legendloc='center left',
+                            legendtitle=legendtitle)
         visualize.visualize(tsne, labels_auto, clusters_auto,
-                            cluster_labels_auto, cluster_path % -1)
+                            cluster_labels_auto, cluster_path % -1,
+                            figsize=figsize,
+                            legend=(1.04, 0.5), legendloc='center left')
     else:
         visualize.compare_datasets(
             tsne, path,

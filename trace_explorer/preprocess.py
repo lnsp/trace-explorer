@@ -2,6 +2,7 @@ import duckdb
 import pandas as pd
 import scipy.stats
 import numpy as np
+import hashlib
 
 
 def generate_columns(source: pd.DataFrame, query: str,
@@ -31,3 +32,7 @@ def filter_by_zscore(source: pd.DataFrame,
     df = source[list(set(pd.columns) - set(exclude_columns))]
     zscores = np.abs(scipy.stats.zscore(df))
     return source[(zscores < limit).all(axis=1)]
+
+
+def hash(df):
+    return hashlib.sha256(pd.util.hash_pandas_object(df, index=True).values).hexdigest()
