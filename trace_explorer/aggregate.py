@@ -34,7 +34,7 @@ def geometric_median(X, eps=1e-5):
         y = y1
 
 
-def boxplots(df, group_target, value_target, yscale=None, path='plot.pdf'):
+def boxplots(df, group_target, value_target, yscale=None, path='plot.pdf', group_label=None, value_label=None):
     # Determine targets
     groups = sorted(df[group_target].unique())
 
@@ -42,24 +42,34 @@ def boxplots(df, group_target, value_target, yscale=None, path='plot.pdf'):
     for group in sorted(groups):
         group_values.append(df[df[group_target] == group][value_target])
 
-    plt.ylabel(value_target)
+    if group_label is None:
+        group_label = group_target
+    if value_label is None:
+        value_label = value_target
+
+    plt.ylabel(value_label)
     if yscale is not None:
         plt.yscale(yscale)
     plt.boxplot(group_values, sym='')
-    plt.xlabel(group_target)
+    plt.xlabel(group_label)
     plt.xticks(np.arange(1, 1+len(groups)), groups)
     plt.grid()
     plt.savefig(path, bbox_inches='tight')
 
 
 def pdf(df, group_target, value_target, group_list=None, yscale=None,
-        path='plot.pdf', xnums=10, xscale=None, xrange=None):
+        path='plot.pdf', xnums=10, xscale=None, xrange=None, group_label=None, value_label=None):
     plt.figure()
 
     groups = sorted(df[group_target].unique())
     if group_list is not None:
         groups = group_list
     value_bins = xnums
+
+    if group_label is None:
+        group_label = group_target
+    if value_label is None:
+        value_label = value_target
 
     if xscale is not None:
         bin_min, bin_max = xrange
@@ -78,11 +88,11 @@ def pdf(df, group_target, value_target, group_list=None, yscale=None,
     #plt.xlim(left=min(value_bins), right=max(value_bins))
     plt.ylim(bottom=0)
     plt.ylabel('density')
-    plt.xlabel(value_target)
+    plt.xlabel(value_label)
     if yscale is not None:
         plt.yscale(yscale)
     if xscale is not None:
         plt.xscale(xscale)
-    lgd = plt.legend(title=group_target, bbox_to_anchor=(0.5, -0.15),
+    lgd = plt.legend(title=group_label, bbox_to_anchor=(0.5, -0.15), loc='upper center',
                      ncol=len(groups))
     plt.savefig(path, bbox_extra_artists=(lgd,), bbox_inches='tight')
