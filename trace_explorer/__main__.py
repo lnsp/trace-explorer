@@ -77,8 +77,11 @@ parser_generate.add_argument('--fillna', default=0.0, type=float,
 
 parser_join = subparsers.add_parser('join')
 parser_join.add_argument('--sources',
-                         action='append',
+                         nargs='+',
+                         default=[],
                          help='sources of dataset to join on index')
+parser_join.add_argument('--mode', choices=['join', 'concat'], required=True, default='concat')
+parser_join.add_argument('--output', required=True)
 
 parser_visualize = subparsers.add_parser('visualize')
 parser_visualize.add_argument('--source',
@@ -109,6 +112,7 @@ parser_visualize.add_argument('--top_n',
                               default=2, type=int)
 parser_visualize.add_argument('--dump_labels',
                               help='dump labels to joblib file')
+parser_visualize.add_argument('--figsize', default='10x10')
 
 parser_compare = subparsers.add_parser(
     'compare', description=''
@@ -123,6 +127,8 @@ parser_compare.add_argument('--subset',
                             default=[])
 parser_compare.add_argument('--output',
                             default='plot.pdf')
+parser_compare.add_argument('--cluster_output',
+                            default='cluster_%s.pdf')
 parser_compare.add_argument('--method',
                             choices=['limit', 'impute'], default='limit')
 parser_compare.add_argument('--exclude_superset',
@@ -139,6 +145,13 @@ parser_compare.add_argument('--tsne_n_iter', default=1000, type=int,
                             help='max number of iterations for TSNE')
 parser_compare.add_argument('--tsne_perplexity', default=30, type=int,
                             help='TSNE perplexity setting')
+parser_compare.add_argument('--combine_figures', default=True, type=bool,
+                            help='Combine source/cluster overview figures')
+parser_compare.add_argument('--source_labels', nargs='+', default=[])
+parser_compare.add_argument('--source_title', default=None)
+parser_compare.add_argument('--cachekey', default=None)
+parser_compare.add_argument('--figsize', default='10x10')
+parser_compare.add_argument('--cluster_figsize', default='10x30')
 
 parser_sample = subparsers.add_parser('sample')
 parser_sample.add_argument('--source', required=True,
@@ -174,7 +187,9 @@ parser_agg.add_argument('--source', required=True,
                         help='source dataset to process')
 parser_agg.add_argument('--type', required=True, choices=['boxplot', 'pdf'])
 parser_agg.add_argument('--group', required=True)
+parser_agg.add_argument('--group_label', default=None)
 parser_agg.add_argument('--value', required=True)
+parser_agg.add_argument('--value_label', default=None)
 parser_agg.add_argument('--yscale', default=None)
 parser_agg.add_argument('--xscale', default=None)
 parser_agg.add_argument('--bins', default=10, type=int)
@@ -188,7 +203,7 @@ parser.add_argument('-v', '--verbose', help='increase output verbosity')
 def main():
     args = parser.parse_args()
 
-    # configure matplotlib fontsize
+    # configure matplotlib fontsize, dpi and markersize
     matplotlib.rc('font', size=args.fontsize)
     matplotlib.rc('figure', dpi=args.dpi)
 
@@ -227,7 +242,7 @@ def main():
                                          perplexity=args.perplexity,
                                          n_iter=args.n_iter)
         visualize.visualize(df_tsne, labels, clusters, cluster_labels,
-                            args.output)
+                            args.output, figsize=tuple(int(x) for x in args.figsize.split('x')))
     elif args.action == 'generate':
         df = pd.read_parquet(args.source)
         df = preprocess.generate_columns(df, args.query, no_copy=args.no_copy)
@@ -237,7 +252,10 @@ def main():
         df.to_parquet(args.output if args.output else args.source)
     elif args.action == 'join':
         # read all dfs
-        join.join(args.sources, args.output)
+        if args.mode == 'concat':
+            join.concat(args.sources, args.output)
+        elif args.mode == 'join':
+            join.join(args.sources, args.output)
     elif args.action == 'compare':
         superset = pd.read_parquet(args.superset)
         subsets = [pd.read_parquet(s) for s in args.subset]
@@ -246,18 +264,27 @@ def main():
         if args.superset_sample:
             superset = superset.sample(n=args.superset_sample)
 
+        source_labels = [args.superset] + args.subset
+        if args.source_labels is not None:
+            source_labels = args.source_labels
+
         if args.method == 'limit':
             compare.by_limiting_columns(
                 datasets=[superset] + subsets,
                 exclude=args.exclude_subset,
                 path=args.output,
-                cluster_labels_source=[args.superset] + args.subset,
+                cluster_labels_source=source_labels,
                 cluster_threshold=args.threshold,
                 cluster_top_n=args.top_n,
+                cluster_path=args.cluster_output,
                 tsne_n_iter=args.tsne_n_iter,
-                tsne_perplexity=args.tsne_perplexity)
+                tsne_perplexity=args.tsne_perplexity,
+                separate_overview=args.combine_figures,
+                figsize=tuple(float(x) for x in args.figsize.split('x')),
+                cluster_figsize=tuple(float(x) for x in args.cluster_figsize.split('x')),
+                cachekey=args.cachekey,
+                legendtitle=args.source_title)
         elif args.method == 'impute':
-            print('not implemented')
             compare.by_imputing_columns(superset, subsets[0],
                                         args.exclude_superset,
                                         args.exclude_subset, args.output,
@@ -272,11 +299,13 @@ def main():
         df = pd.read_parquet(args.source, columns=[args.group, args.value])
         if args.type == 'boxplot':
             aggregate.boxplots(df, args.group, args.value, yscale=args.yscale,
-                               path=args.output)
+                               path=args.output, group_label=args.group_label,
+                               value_label=args.value_label)
         elif args.type == 'pdf':
             aggregate.pdf(df, args.group, args.value, yscale=args.yscale,
                           path=args.output, xscale=args.xscale,
-                          xnums=args.bins, xrange=(args.bins_min, args.bins_max))
+                          xnums=args.bins, xrange=(args.bins_min, args.bins_max),
+                          group_label=args.group_label, value_label=args.value_label)
     elif args.action == "convert":
         # load transformer module
         tf = convert.load_transformer("convert_plugin", args.using)
