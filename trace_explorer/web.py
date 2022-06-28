@@ -40,7 +40,7 @@ def show_compare_form():
 @app.route('/list_sources', methods=['POST'])
 def list_sources():
     # list all sources in directory
-    return {'sources': sorted(glob.glob(os.path.join(data_directory, '**.parquet')))}
+    return {'sources': sorted(glob.glob(os.path.join(data_directory, '**/*.parquet'), recursive=True))}
 
 
 @app.route('/list_source_columns', methods=['POST'])
