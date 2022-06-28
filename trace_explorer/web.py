@@ -4,14 +4,17 @@ from flask import Flask, render_template, request
 import pandas as pd
 import glob
 import pdf2image
-from trace_explorer import visualize, compare, preprocess
+from trace_explorer import visualize, compare, preprocess, convert
 from io import BytesIO
 from base64 import b64encode
 import tempfile
+import random
+import shutil
 
 template_path = os.path.join(os.path.dirname(__loader__.path), 'web-templates')
 app = Flask(__name__, template_folder=template_path)
 data_directory = os.path.curdir
+data_buckets = {}
 
 
 @app.route("/")
@@ -19,8 +22,8 @@ def index():
     return render_template('index.html', active=None)
 
 
-@app.route('/convert')
-def convert():
+@app.route('/convert', methods=['GET'])
+def show_convert_form():
     return render_template('convert.html', active='convert')
 
 
@@ -37,7 +40,7 @@ def show_compare_form():
 @app.route('/list_sources', methods=['POST'])
 def list_sources():
     # list all sources in directory
-    return {'sources': sorted(glob.glob(os.path.join(data_directory, '**/*.parquet')))}
+    return {'sources': sorted(glob.glob(os.path.join(data_directory, '**.parquet')))}
 
 
 @app.route('/list_source_columns', methods=['POST'])
@@ -61,6 +64,52 @@ def list_compare_columns():
 
     # fetch source columns
     return {'columns': sorted(list(cols))}
+
+@app.route('/init_upload_bucket', methods=['POST'])
+def init_upload_bucket():
+    bucket = '%030x' % random.randrange(16**32)
+    while bucket in data_buckets:
+        bucket = '%030x' % random.randrange(16**32)
+
+    data_buckets[bucket] = tempfile.mkdtemp()
+    return { 'bucket': bucket }
+
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    file = request.files['file']
+    bucket = request.form['bucket']
+
+    # put file into 'bucket' on disk
+    bucket_path = data_buckets[bucket]
+
+    # generate random hex id
+    fid = '%030x' % random.randrange(16**32)
+    file.save(os.path.join(bucket_path, fid))
+
+    # return hex id
+    return { 'id': fid }
+
+@app.route('/convert', methods=['POST'])
+def convert_form():
+    payload = request.get_json()
+    bucket = payload['bucket']
+    file_ids = payload['files']
+    name = payload['name']
+    transformer_id = payload['transformer']
+
+    bucket_path = data_buckets[bucket]
+    file_paths = [os.path.join(bucket_path, fid) for fid in file_ids]
+
+    transformer_path = os.path.join(bucket_path, transformer_id)
+
+    print(transformer_path)
+    transformer = convert.load_transformer('convert_plugin', transformer_path)
+    convert.to_parquet(transformer, file_paths, name + '.parquet')
+
+    # delete old bucket
+    shutil.rmtree(bucket_path)
+    return {}
 
 
 @app.route('/compare', methods=['POST'])

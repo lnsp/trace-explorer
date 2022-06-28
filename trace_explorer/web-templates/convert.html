@@ -4,19 +4,197 @@
 
 {% block content %}
 <div class="p-4">
-  <form>
+  <form class="flex flex-col gap-4 h-full"
+        id="convert-form">
+    <div class="flex gap-2 items-center text-lg font-medium">
+      <label for="transformer">Transformer</label>
+    </div>
+    <div class="">
+      <label for="transformer"
+             id="transformer-label"
+             class="border border-gray-900 h-8 px-2 flex items-center gap-2 mt-2">
+        <svg xmlns="http://www.w3.org/2000/svg"
+             class="h-4 w-4"
+             fill="none"
+             viewBox="0 0 24 24"
+             stroke="currentColor"
+             stroke-width="2">
+          <path stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+        </svg>
+        <span>Choose file</span>
+      </label>
+      <input type="file"
+             id="transformer"
+             name="transformer"
+             class="hidden">
+    </div>
+    <div class="flex gap-2 items-center text-lg font-medium">
+      <label for="tracefiles">Source files</label>
+    </div>
+    <div class="flex flex-col">
+      <label for="tracefiles"
+             class="border border-gray-900 h-8 px-2 flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg"
+             class="h-4 w-4"
+             fill="none"
+             viewBox="0 0 24 24"
+             stroke="currentColor"
+             stroke-width="2">
+          <path stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+        </svg>
+        <span>Choose files</span>
+      </label>
+      <input type="file"
+             multiple
+             id="tracefiles"
+             name="tracefiles"
+             class="hidden">
+    </div>
+    <div class="flex gap-2 items-center text-lg font-medium">
+      <label for="tracename">Name</label>
+    </div>
+    <div class="flex-grow">
+      <input type="text"
+             id="tracename"
+             name="tracename"
+             placeholder="mytrace"
+             pattern="[A-Za-z]+"
+             class="border border-gray-900 h-8 px-2">
+    </div>
     <div class="flex gap-2 items-center">
-      <div class="w-8 h-8 flex items-center justify-center text-bold bg-black text-white">1</div>
-      <div>
-        <label for="transformer">Use</label>
-        <select name="transformer" class="border border-gray-900 h-8 px-2 mx-2">
-          <option>Snowflake</option>
-          <option>MSSQL</option>
-          <option>Custom</option>
-        </select>
-        <label for="transformer">to transform the data.</label>
-      </div>
+      <button role="submit"
+              id="convert-submit"
+              class="bg-black flex items-center font-medium shadow-lg hover:shadow-xl hover:bg-gray-800 py-2 px-4 text-white">
+        <div class="h-5 w-5 -ml-1 mr-3">
+          <svg xmlns="http://www.w3.org/2000/svg"
+               id="go-submit"
+               class="h-5 w-5 text-white"
+               fill="none"
+               viewBox="0 0 24 24"
+               stroke="currentColor"
+               stroke-width="2">
+            <path stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+          <svg id="in-progress"
+               class="animate-spin h-5 w-5 text-white hidden"
+               xmlns="http://www.w3.org/2000/svg"
+               fill="none"
+               viewBox="0 0 24 24">
+            <circle class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"></circle>
+            <path class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+            </path>
+          </svg>
+        </div>
+        Convert
+      </button>
+      <span id="convert-success"
+            class="hidden">
+        Trace has been saved.
+      </span>
     </div>
   </form>
 </div>
+
+<script>
+  let state = { bucket: undefined, transformer: undefined, files: [] };
+
+  let init_bucket_id = (bucket) => {
+    $.post('/init_upload_bucket', (data, status, xhr) => {
+      // Store bucket id
+      state.transformer = undefined
+      state.files = []
+      state.bucket = data['bucket']
+    })
+  }
+
+  // Initialize upload bucket on load
+  $(document).ready(() => {
+    init_bucket_id()
+  })
+
+  $('#transformer').on('change', (event) => {
+    // Build custom formdata
+    var formData = new FormData()
+    formData.append('bucket', state.bucket)
+    formData.append('file', event.target.files[0])
+    // Upload selected file via /upload
+    $.ajax('/upload', {
+      data: formData,
+      type: 'POST',
+      success: (data, status, xhr) => {
+        state.transformer = data['id']
+      },
+      cache: false,
+      contentType: false,
+      processData: false
+    })
+  })
+
+  $('#tracefiles').on('change', (event) => {
+    let files = event.target.files;
+
+    for (let item of files) {
+      // Build custom formdata
+      var formData = new FormData()
+      formData.append('bucket', state.bucket)
+      formData.append('file', item)
+      // Upload selected file via /upload
+      $.ajax('/upload', {
+        data: formData,
+        type: 'POST',
+        success: (data, status, xhr) => {
+          state.files.push(data['id'])
+        },
+        cache: false,
+        contentType: false,
+        processData: false
+      })
+    }
+  })
+
+  $('#convert-form').on('submit', (event) => {
+    event.preventDefault()
+
+    $('#in-progress').removeClass('hidden')
+    $('#go-submit').addClass('hidden')
+    $('#convert-submit').attr('disabled', true)
+    $('#convert-success').addClass('hidden')
+
+    $.ajax('/convert', {
+      data: JSON.stringify({
+        name: $('#tracename').val(),
+        bucket: state.bucket,
+        files: state.files,
+        transformer: state.transformer,
+      }),
+      contentType: 'application/json',
+      type: 'POST',
+      success: (data, status, xhr) => {
+        $('#in-progress').addClass('hidden')
+        $('#go-submit').removeClass('hidden')
+        $('#convert-submit').attr('disabled', false)
+        $('#convert-success').removeClass('hidden')
+
+        // Reset bucket ID
+        init_bucket_id()
+      },
+      error: (xhr, status, text) => {
+        console.log(status, text)
+      }
+    })
+  })
+</script>
 {% endblock %}

@@ -1,4 +1,4 @@
-import importlib
+import importlib.machinery
 import glob
 import pandas as pd
 from trace_explorer import transformer
@@ -9,9 +9,8 @@ def load_transformer(name, path):
     Loads a Transformer from the given file.
     """
 
-    spec = importlib.util.spec_from_file_location(name, path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    loader = importlib.machinery.SourceFileLoader(name, path)
+    module = loader.load_module()
     return module.Transformer()
 
 
