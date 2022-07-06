@@ -146,12 +146,17 @@ parser_compare.add_argument('--tsne_n_iter', default=1000, type=int,
 parser_compare.add_argument('--tsne_perplexity', default=30, type=int,
                             help='TSNE perplexity setting')
 parser_compare.add_argument('--combine_figures', default=True, type=bool,
-                            help='Combine source/cluster overview figures')
-parser_compare.add_argument('--source_labels', nargs='+', default=[])
-parser_compare.add_argument('--source_title', default=None)
-parser_compare.add_argument('--cachekey', default=None)
-parser_compare.add_argument('--figsize', default='10x10')
-parser_compare.add_argument('--cluster_figsize', default='10x30')
+                            help='combine source/cluster overview figures')
+parser_compare.add_argument('--source_labels', nargs='+', default=[],
+                            help='source labels')
+parser_compare.add_argument('--source_title', default=None,
+                            help='source title')
+parser_compare.add_argument('--cachekey', default=None,
+                            help='set a custom cachekey')
+parser_compare.add_argument('--figsize', default='10x10',
+                            help='default figure size')
+parser_compare.add_argument('--cluster_figsize', default='10x30',
+                            help='cluster introspection figure size')
 
 parser_sample = subparsers.add_parser('sample')
 parser_sample.add_argument('--source', required=True,
@@ -185,17 +190,30 @@ parser_web.add_argument('--port', default=5000, type=int,
 parser_agg = subparsers.add_parser('aggregate')
 parser_agg.add_argument('--source', required=True,
                         help='source dataset to process')
-parser_agg.add_argument('--type', required=True, choices=['boxplot', 'pdf'])
-parser_agg.add_argument('--group', required=True)
-parser_agg.add_argument('--group_label', default=None)
-parser_agg.add_argument('--value', required=True)
-parser_agg.add_argument('--value_label', default=None)
-parser_agg.add_argument('--yscale', default=None)
-parser_agg.add_argument('--xscale', default=None)
-parser_agg.add_argument('--bins', default=10, type=int)
-parser_agg.add_argument('--bins_min', default=None, type=int)
-parser_agg.add_argument('--bins_max', default=None, type=int)
-parser_agg.add_argument('--output', default='plot.pdf')
+parser_agg.add_argument('--type', required=True, choices=['boxplot', 'pdf'],
+                        help='choose plot type')
+parser_agg.add_argument('--group', required=True,
+                        help='columns to group by')
+parser_agg.add_argument('--group_label', default=None,
+                        help='label for group')
+parser_agg.add_argument('--value', required=True,
+                        help='column to compute distribution of')
+parser_agg.add_argument('--value_label', default=None,
+                        help='label for value')
+parser_agg.add_argument('--yscale', default=None,
+                        choices=['linear', 'log'],
+                        help='scale for y-axis, can be linear or log')
+parser_agg.add_argument('--xscale', default=None,
+                        choices=['linear', 'log'],
+                        help='scale for x-axis, can be linear or log')
+parser_agg.add_argument('--bins', default=10, type=int,
+                        help='number of bins for pdf')
+parser_agg.add_argument('--bins_min', default=None, type=int,
+                        help='bin range minimum')
+parser_agg.add_argument('--bins_max', default=None, type=int,
+                        help='bin range maximum')
+parser_agg.add_argument('--output', default='plot.pdf'
+                        help='output destination')
 
 parser.add_argument('-v', '--verbose', help='increase output verbosity')
 
