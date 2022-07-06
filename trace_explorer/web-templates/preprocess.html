@@ -1,0 +1,154 @@
+{% extends "layout.html" %}
+
+{% block title %}Preprocess{% endblock %}
+
+{% block content %}
+<div class="p-4 border-r border-gray-300 shrink-0 w-96">
+  <form class="flex flex-col gap-4 h-full">
+    <div class="flex gap-2 items-center text-lg font-medium">
+      <label for="source">Dataset</label>
+    </div>
+    <div class="">
+      <select name="source"
+              id="source-selector"
+              class="border border-gray-900 h-8 px-2 w-full">
+      </select>
+    </div>
+    <div class="flex gap-2 items-center text-lg font-medium">
+      <label for="query">Query</label>
+    </div>
+    <div class="flex-grow">
+      <textarea name="query"
+                id="query"
+                placeholder="SELECT * FROM dataset"
+                class="border border-gray-900 h-full px-2 w-full font-mono" disabled></textarea>
+    </div>
+    <div class="flex gap-2 items-center">
+      <input type="checkbox" id="copy-columns">
+      <label for="copy-columns">Copy columns</label>
+    </div>
+    <div class="flex gap-2 items-center justify-between">
+      <button role="submit"
+              id="execute-submit"
+              class="bg-black flex items-center font-medium shadow-lg hover:shadow-xl hover:bg-gray-800 py-2 px-4 text-white">
+        <div class="h-5 w-5 -ml-1 mr-3">
+          <svg xmlns="http://www.w3.org/2000/svg"
+               id="go-submit"
+               class="h-5 w-5 text-white"
+               fill="none"
+               viewBox="0 0 24 24"
+               stroke="currentColor"
+               stroke-width="2">
+            <path stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+          <svg id="in-progress"
+               class="animate-spin h-5 w-5 text-white hidden"
+               xmlns="http://www.w3.org/2000/svg"
+               fill="none"
+               viewBox="0 0 24 24">
+            <circle class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"></circle>
+            <path class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+            </path>
+          </svg>
+        </div>
+        Execute
+      </button>
+      <button role="submit"
+              id="reload-submit"
+              class="bg-white border border-gray-400 text-gray-400 flex items-center font-medium hover:bg-gray-100 p-2">
+        <svg xmlns="http://www.w3.org/2000/svg"
+             class="h-5 w-5"
+             fill="none"
+             viewBox="0 0 24 24"
+             stroke="currentColor"
+             stroke-width="2">
+          <path stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+      </button>
+    </div>
+  </form>
+</div>
+<div class="flex flex-grow flex-col min-h-full max-w-full relative">
+  <div class="text-lg font-medium p-4 border-b border-gray-300">
+    Overview
+  </div>
+  <div class="max-w-screen overflow-x-auto flex-grow relative">
+    <table class="w-full border-r border-b border-collapse" id="overview-table"></table>
+  </div>
+</div>
+
+<script>
+  function describeColumns(source) {
+    $.post('/describe_source_columns', { source: source }, (data) => {
+      // Generate table here
+      let table = $('#overview-table');
+
+      // Clear out table and append header row
+      table.empty();
+      let tablehead = $('<thead>');
+      let tableheadrow = $('<tr>');
+      tableheadrow.append($('<th>', { text: 'Column', class: 'p-2 font-medium text-left' }))
+      for (let stat of data.stats) {
+        tableheadrow.append($('<th>', { text: stat, class: 'font-medium p-2 border-l border-r border-slate-300' }));
+      }
+      tablehead.append(tableheadrow);
+      table.append(tablehead);
+
+      // Add columns
+      let tablebody = $('<tbody>');
+      for (let col in data.columns) {
+        let coldata = data.columns[col];
+        let tablerow = $('<tr>');
+        tablerow.append($('<td>', { text: col, class: 'p-2 border-r border-t border-b border-slate-300'}));
+        for (let stat of coldata) {
+          tablerow.append($('<td>', { text: stat.toString(), class: 'p-2 border border-slate-300' }));
+        }
+        tablebody.append(tablerow);
+      }
+      table.append(tablebody);
+    })
+  }
+  $('#source-selector').on('change', (event) => {
+    describeColumns(event.target.value)
+  })
+
+  $.post('/list_sources', {}, (data) => {
+    $('#source-selector').empty();
+    for (let s of data.sources) {
+      $('#source-selector').append($("<option>").val(s).text(s))
+    }
+    $('#source-selector').trigger('change');
+    $('#query').removeAttr('disabled');
+  })
+
+  $('#execute-submit').on('click', (event) => {
+    event.preventDefault();
+
+    let query = $('#query').val();
+    let source = $('#source-selector').val();
+    let copyColumns = $('#copy-columns').is(":checked");
+    
+    $.post('/preprocess_source', { source: source, query: query, copy: copyColumns }, (data) => {
+      // do nothing, just perform describeColumns
+      describeColumns($('#source-selector').val());
+    })
+  })
+
+  $('#reload-submit').on('click', (event) => {
+    event.preventDefault();
+
+    describeColumns($('#source-selector').val());
+  })
+</script>
+{% endblock %}

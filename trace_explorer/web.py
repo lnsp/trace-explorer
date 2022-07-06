@@ -18,7 +18,7 @@ data_buckets = {}
 
 
 @app.route("/")
-def index():
+def show_index():
     return render_template('index.html', active=None)
 
 
@@ -36,6 +36,39 @@ def show_visualize_form():
 def show_compare_form():
     return render_template('compare.html', active='compare')
 
+@app.route('/preprocess', methods=['GET'])
+def show_preprocess_form():
+    return render_template('preprocess.html', active='preprocess')
+
+
+@app.route('/describe_source_columns', methods=['POST'])
+def describe_source_columns():
+    # do something
+    source = request.form['source']
+    df = pd.read_parquet(os.path.join(data_directory, source))
+
+    description = df.describe()
+
+    stats = list(description.index)
+    columns = {}
+    for col in description.columns:
+        columns[col] = []
+        for stat in description.index:
+            columns[col].append(description[col][stat])
+
+    return {'stats': stats, 'columns': columns}
+
+@app.route('/preprocess_source', methods=['POST'])
+def preprocess_source():
+    source = request.form['source']
+    query = request.form['query']
+    copy = request.form['copy'] == 'true'
+
+    df = pd.read_parquet(os.path.join(data_directory, source))
+    df = preprocess.generate_columns(df, query, not copy)
+    df.to_parquet(os.path.join(data_directory, source))
+
+    return {}
 
 @app.route('/list_sources', methods=['POST'])
 def list_sources():
