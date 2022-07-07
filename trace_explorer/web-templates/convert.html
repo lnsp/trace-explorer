@@ -3,8 +3,8 @@
 {% block title %}Convert{% endblock %}
 
 {% block content %}
-<div class="p-4">
-  <form class="flex flex-col gap-4 h-full"
+<div class="p-4 w-96">
+  <form class="flex flex-col gap-2 h-full"
         id="convert-form">
     <div class="flex gap-2 items-center text-lg font-medium">
       <label for="transformer">Transformer</label>
@@ -12,7 +12,7 @@
     <div class="">
       <label for="transformer"
              id="transformer-label"
-             class="border border-gray-900 h-8 px-2 flex items-center gap-2 mt-2">
+             class="border border-gray-900 h-8 px-2 flex items-center gap-2">
         <svg xmlns="http://www.w3.org/2000/svg"
              class="h-4 w-4"
              fill="none"
@@ -23,14 +23,14 @@
                 stroke-linejoin="round"
                 d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
         </svg>
-        <span>Choose file</span>
+        <span id="transformer-button-text">Choose file</span>
       </label>
       <input type="file"
              id="transformer"
              name="transformer"
              class="hidden">
     </div>
-    <div class="flex gap-2 items-center text-lg font-medium">
+    <div class="flex gap-2 items-center text-lg font-medium mt-4">
       <label for="tracefiles">Source files</label>
     </div>
     <div class="flex flex-col">
@@ -54,7 +54,7 @@
              name="tracefiles"
              class="hidden">
     </div>
-    <div class="flex gap-2 items-center text-lg font-medium">
+    <div class="flex gap-2 items-center text-lg font-medium mt-4">
       <label for="tracename">Name</label>
     </div>
     <div class="">
@@ -63,9 +63,9 @@
              name="tracename"
              placeholder="mytrace"
              pattern="[A-Za-z]+"
-             class="border border-gray-900 h-8 px-2">
+             class="border border-gray-900 h-8 px-2 w-full">
     </div>
-    <div class="flex gap-2 items-center">
+    <div class="flex gap-2 items-center mt-4">
       <button role="submit"
               id="convert-submit"
               class="bg-black flex items-center font-medium shadow-lg hover:shadow-xl hover:bg-gray-800 py-2 px-4 text-white">
@@ -109,7 +109,7 @@
 </div>
 
 <script>
-  let state = { bucket: undefined, transformer: undefined, files: [] };
+  let state = { bucket: undefined, transformer: undefined, files: [], upload_count: 0, upload_target: 0 };
 
   let init_bucket_id = (bucket) => {
     $.post('/init_upload_bucket', (data, status, xhr) => {
@@ -117,7 +117,20 @@
       state.transformer = undefined
       state.files = []
       state.bucket = data['bucket']
+      state.upload_count = 0
+      state.upload_target = 0
+
+      // Reset tracefile upload
+      $('#tracefiles-upload-tracker').addClass('hidden');
+
+      // Reset transformer upload text
+      $('#transformer-button-text').text('Choose file')
     })
+  }
+
+  function updateTracefileUploadCounter() {
+    $('#tracefiles-upload-tracker').removeClass('hidden');
+    $('#tracefiles-upload-tracker-count').text(`${state.upload_count}/${state.upload_target}`)
   }
 
   // Initialize upload bucket on load
@@ -126,6 +139,8 @@
   })
 
   $('#transformer').on('change', (event) => {
+    // Show filename
+    $('#transformer-button-text').text(event.target.files[0].name)
     // Build custom formdata
     var formData = new FormData()
     formData.append('bucket', state.bucket)
@@ -146,6 +161,9 @@
   $('#tracefiles').on('change', (event) => {
     let files = event.target.files;
 
+    // Increase upload_target_count
+    state.upload_target += files.length;
+
     for (let item of files) {
       // Build custom formdata
       var formData = new FormData()
@@ -157,6 +175,11 @@
         type: 'POST',
         success: (data, status, xhr) => {
           state.files.push(data['id'])
+
+          // Increase upload count
+          state.upload_count++
+          // Update upload tracker
+          updateTracefileUploadCounter()
         },
         cache: false,
         contentType: false,
