@@ -197,7 +197,9 @@ def visualize(df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray,
     for label, text in zip(clusters, cluster_labels):
         c = df[df_labels == label]
         # choose color scheme based on number of labels
-        if len(clusters) <= 20:
+        if len(clusters) <= 10:
+            color = plt.cm.tab10(label)
+        elif len(clusters) <= 20:
             color = plt.cm.tab20(label)
         else:
             color = plt.cm.get_cmap('hsv')(label / len(clusters))
