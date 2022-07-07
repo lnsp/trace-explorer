@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import joblib
 import matplotlib
+import sys
 
 from trace_explorer import visualize, join, convert, preprocess, compare, web, aggregate
 
@@ -219,6 +220,10 @@ parser.add_argument('-v', '--verbose', help='increase output verbosity')
 
 
 def main():
+    # Print out help if no args are supplied
+    if len(sys.argv)==1:
+        parser.print_help(sys.stderr)
+        sys.exit(1)
     args = parser.parse_args()
 
     # configure matplotlib fontsize, dpi and markersize

@@ -79,7 +79,7 @@
     </div>
   </form>
 </div>
-<div class="flex flex-grow flex-col min-h-full max-w-full relative">
+<div class="flex flex-grow flex-col min-h-full overflow-x-auto relative">
   <div class="text-lg font-medium p-4 border-b border-gray-300">
     Overview
   </div>
@@ -100,7 +100,7 @@
       let tableheadrow = $('<tr>');
       tableheadrow.append($('<th>', { text: 'Column', class: 'p-2 font-medium text-left' }))
       for (let stat of data.stats) {
-        tableheadrow.append($('<th>', { text: stat, class: 'font-medium p-2 border-l border-r border-slate-300' }));
+        tableheadrow.append($('<th>', { text: stat, class: 'font-medium p-2 border-l text-left border-r border-slate-300' }));
       }
       tablehead.append(tableheadrow);
       table.append(tablehead);
