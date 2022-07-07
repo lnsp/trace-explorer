@@ -220,16 +220,14 @@ def visualize_with_params():
 
     # save visualization as temporary file
     # TODO: Find better path naming scheme
-    tmp_pdf_path = os.path.join(data_directory, "visualize.pdf")
+    tmppath = tempfile.mktemp('.png')
     visualize.visualize(df_tsne, labels, clusters, cluster_labels,
-                        tmp_pdf_path)
+                        tmppath)
 
-    # turn tmp pdf into image
-    buf = BytesIO()
-    pages = pdf2image.convert_from_path(tmp_pdf_path)
-    pages[0].save(buf, 'png')
 
-    png_data = b64encode(buf.getbuffer()).decode('utf-8')
+    with open(tmppath, 'rb') as f:
+        png_binary_data = f.read()
+    png_data = b64encode(png_binary_data).decode('utf-8')
     return {'data': png_data}
 
 
