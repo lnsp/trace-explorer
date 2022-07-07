@@ -224,6 +224,7 @@ def main():
     # configure matplotlib fontsize, dpi and markersize
     matplotlib.rc('font', size=args.fontsize)
     matplotlib.rc('figure', dpi=args.dpi)
+    matplotlib.use('agg')
 
     if args.action == 'unroll':
         # open dataframe
