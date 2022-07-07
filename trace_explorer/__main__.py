@@ -212,7 +212,7 @@ parser_agg.add_argument('--bins_min', default=None, type=int,
                         help='bin range minimum')
 parser_agg.add_argument('--bins_max', default=None, type=int,
                         help='bin range maximum')
-parser_agg.add_argument('--output', default='plot.pdf'
+parser_agg.add_argument('--output', default='plot.pdf',
                         help='output destination')
 
 parser.add_argument('-v', '--verbose', help='increase output verbosity')
