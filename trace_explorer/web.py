@@ -10,6 +10,9 @@ from base64 import b64encode
 import tempfile
 import random
 import shutil
+import logging
+import webbrowser
+import threading
 
 template_path = os.path.join(os.path.dirname(__loader__.path), 'web-templates')
 app = Flask(__name__, template_folder=template_path)
@@ -230,6 +233,13 @@ def visualize_with_params():
     return {'data': png_data}
 
 
+def open_browser(url):
+    webbrowser.open(url)
+
 
 def serve(dir, host, port):
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.ERROR)
+
+    threading.Timer(1, open_browser, ['http://%s:%d' % (host, port)]).start()
     app.run(host=host, port=port)
