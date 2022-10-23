@@ -19,6 +19,8 @@ parser = argparse.ArgumentParser(prog='trace-explorer',
                                  description=description)
 parser.add_argument('--fontsize', help='globally set output font size',
                     type=int, default=12)
+parser.add_argument('--markersize', help='globally set output marker size',
+                    type=int, default=1)
 parser.add_argument('--dpi', help='globally set dpi', type=int, default=140)
 
 subparsers = parser.add_subparsers(dest='action', title='actions')
@@ -228,6 +230,7 @@ def main():
 
     # configure matplotlib fontsize, dpi and markersize
     matplotlib.rc('font', size=args.fontsize)
+    matplotlib.rc('lines', markersize=args.markersize)
     matplotlib.rc('figure', dpi=args.dpi)
     matplotlib.use('agg')
 
