@@ -49,7 +49,7 @@ B --> |Compare with other dataset| C
 
 > In case you want to go along and test out the commands but do not have the required data at hand, you can generate sample data using the `generator.py` script in the *sample-data* folder. Go down to the section on *Generating sample data*, follow the examples there or return to this step later on.
 
-First, you have to convert your data into a common format. We use parquet for storing datasets because of its widespread compatibility and integrated compression. Each measurement must be converted into one row in the common dataset format. We provide the `CommonTraceConverter` interface to allow users to provide their own format converter. You can find examples for Snowset, Snowflake profiles, MSSQL and PostgreSQL in our `converter/` directory.
+First, you have to convert your data into a common format. We use parquet for storing datasets because of its widespread compatibility and integrated compression. Each measurement must be converted into one row in the common dataset format. We provide [the `Transformer` interface](trace_explorer/transformer.py) to allow users to provide their own format converter. You can find examples for custom transformers in the `transformers/` directory.
 
 ```bash
 trace_explorer convert --using myconverter.py --source 'mydataset/*.merged' --output mydatasetcommon.parquet
