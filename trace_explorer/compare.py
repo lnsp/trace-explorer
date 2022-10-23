@@ -29,9 +29,8 @@ def by_limiting_columns(
     the column space to the subset columns. Returns number of clusters.
     """
 
-    print('Comparing datasets by limiting columns '
-          'to cut (n = [%s]) ...' %
-          (','.join(str(len(s)) for s in datasets)))
+    print(f'Comparing datasets by limiting columns '
+          f'to cut (n = {",".join(str(len(s)) for s in datasets)} ...')
 
     # Compute cut of columns in subset
     cols = set(datasets[0].columns)
@@ -51,7 +50,7 @@ def by_limiting_columns(
     hashsum = hashlib.sha256(pd.util.hash_pandas_object(concatenated, index=True).values).hexdigest()
     if cachekey is not None:
         hashsum = cachekey
-    print('Dataset has hashsum %s' % hashsum)
+    print(f'Dataset has hashsum {hashsum}')
 
     pcad = visualize.compute_pca(concatenated, hashsum=hashsum)
     tsne = visualize.compute_tsne(pcad, pcad.index,
@@ -105,8 +104,8 @@ def by_imputing_columns(superset: pd.DataFrame, subset: pd.DataFrame,
     columns in the subset by using an iterative imputer.
     """
 
-    print('Comparing datasets by imputing missing '
-          'columns (n = %d, m = %d) ...' % (len(superset), len(subset)))
+    print(f'Comparing datasets by imputing missing '
+          f'columns (n = {len(superset)}, m = {len(subset)}) ...')
     superset_cols = set(superset.columns) - \
         set(superset_exclude) - set(subset_exclude)
     subset_cols = set(subset.columns) - set(subset_exclude)
