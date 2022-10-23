@@ -27,7 +27,7 @@ setuptools.setup(
         'iniconfig==1.1.1',
         'itsdangerous==2.1.2',
         'Jinja2==3.1.2',
-        'joblib==1.1.0',
+        'joblib==1.2.0',
         'kiwisolver==1.3.2',
         'locket==0.2.1',
         'MarkupSafe==2.1.1',
