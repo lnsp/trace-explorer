@@ -96,10 +96,10 @@ parser_visualize.add_argument('--threshold',
                               default=80,
                               help='threshold for agglomerative clustering',
                               type=float)
-parser_visualize.add_argument('--perplexity',
+parser_visualize.add_argument('--tsne_perplexity',
                               default=30,
                               help='perplexity for TSNE embedding', type=float)
-parser_visualize.add_argument('--n_iter',
+parser_visualize.add_argument('--tsne_n_iter',
                               default=5000,
                               help='number of iterations for TSNE', type=int)
 parser_visualize.add_argument('--output',
@@ -160,6 +160,11 @@ parser_compare.add_argument('--figsize', default='10x10',
                             help='default figure size')
 parser_compare.add_argument('--cluster_figsize', default='10x30',
                             help='cluster introspection figure size')
+parser_compare.add_argument('--highlight', nargs='+', default=[],
+                            help='highlight clusters')
+parser_compare.add_argument('--highlight_output', default='highlight.pdf')
+parser_compare.add_argument('--highlight_labels', nargs='+', default=[],
+                            help='labels for highlighted clusters')
 
 parser_sample = subparsers.add_parser('sample')
 parser_sample.add_argument('--source', required=True,
@@ -266,10 +271,11 @@ def main():
         if args.dump_labels:
             joblib.dump(labels, args.dump_labels, ('gzip', 9))
         df_tsne = visualize.compute_tsne(df_pcad, sample,
-                                         perplexity=args.perplexity,
-                                         n_iter=args.n_iter)
+                                         perplexity=args.tsne_perplexity,
+                                         n_iter=args.tsne_n_iter)
         visualize.visualize(df_tsne, labels, clusters, cluster_labels,
-                            args.output, figsize=tuple(int(x) for x in args.figsize.split('x')))
+                            args.output,
+                            figsize=tuple(int(x) for x in args.figsize.split('x')))
     elif args.action == 'generate':
         df = pd.read_parquet(args.source)
         df = preprocess.generate_columns(df, args.query, no_copy=args.no_copy)
@@ -309,6 +315,9 @@ def main():
                 separate_overview=args.combine_figures,
                 figsize=tuple(float(x) for x in args.figsize.split('x')),
                 cluster_figsize=tuple(float(x) for x in args.cluster_figsize.split('x')),
+                highlight_clusters=set(int(x) for x in args.highlight),
+                highlight_path=args.highlight_output,
+                highlight_labels=args.highlight_labels,
                 cachekey=args.cachekey,
                 legendtitle=args.source_title)
         elif args.method == 'impute':

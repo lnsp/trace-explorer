@@ -22,6 +22,9 @@ def by_limiting_columns(
         cluster_figsize=(10, 30),
         cluster_path: str = 'cluster_%d.pdf',
         separate_overview: bool = False,
+        highlight_clusters=[],
+        highlight_path='highlight.pdf',
+        highlight_labels=[],
         cachekey=None,
         legendtitle=None) -> int:
     """
@@ -30,7 +33,7 @@ def by_limiting_columns(
     """
 
     print(f'Comparing datasets by limiting columns '
-          f'to cut (n = {",".join(str(len(s)) for s in datasets)} ...')
+          f'to cut (n = {",".join(str(len(s)) for s in datasets)}) ...')
 
     # Compute cut of columns in subset
     cols = set(datasets[0].columns)
@@ -90,6 +93,13 @@ def by_limiting_columns(
                                cluster_figsize,
                                cluster_path, clusters_auto,
                                cluster_labels_auto, labels_auto)
+
+    if len(highlight_clusters) != 0:
+        visualize.highlight_clusters(
+            concatenated, pcad, tsne, figsize,
+            highlight_path, highlight_clusters,
+            clusters_auto, highlight_labels, labels_auto)
+
     return len(cluster_labels_auto)
 
 

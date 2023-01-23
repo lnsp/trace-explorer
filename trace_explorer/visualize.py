@@ -171,6 +171,7 @@ def label_clusters(df: pd.DataFrame, subset_idx: np.ndarray,
 
     # generate labels
     cluster_labels = [
+        f'{clusters[i]} ' +
         ', '.join(
             '%.2f (Z=%.2f) %s' % (
                 cluster_means[i][j],
@@ -194,6 +195,13 @@ def visualize(df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray,
               label_graph=False, legend=(0.5, -0.05), legendloc='upper center',
               legendtitle=None):
     plt.figure(figsize=figsize)
+    ax = plt.axes()
+
+    # drop labels for ax
+    for axis in [ax.get_xaxis(), ax.get_yaxis()]:
+        axis.set_visible(False)
+        axis.set_ticks([])
+
     for label, text in zip(clusters, cluster_labels):
         c = df[df_labels == label]
         # choose color scheme based on number of labels
@@ -203,10 +211,10 @@ def visualize(df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray,
             color = plt.cm.tab20(label)
         else:
             color = plt.cm.get_cmap('hsv')(label / len(clusters))
-        plt.scatter(c[0], c[1], c=[color] * len(c), label=text)
+        ax.scatter(c[0], c[1], c=[color] * len(c), label=text)
         if label_graph:
             m = c.median()
-            plt.text(m[0], m[1], str(label), weight='bold')
+            ax.text(m[0], m[1], str(label), weight='bold')
     lgd = plt.legend(loc=legendloc, bbox_to_anchor=legend,
                      fancybox=False, shadow=False, ncol=1, title=legendtitle)
     for i in range(len(lgd.legendHandles)):
@@ -218,7 +226,14 @@ def _plot_clusters(ax: plt.Axes,
                    df: pd.DataFrame, df_labels: np.ndarray,
                    clusters: np.ndarray,
                    cluster_labels: list[str],
-                   label_graph=False, show_legend=True):
+                   label_graph=False, show_legend=True,
+                   legend_loc='upper center',
+                   legend_anchor=(0.5, -0.05)):
+    # drop labels for ax
+    for axes in [ax.get_xaxis(), ax.get_yaxis()]:
+        axes.set_visible(False)
+        axes.set_ticks([])
+
     for label, text in zip(clusters, cluster_labels):
         c = df[df_labels == label]
         # choose color scheme based on number of labels
@@ -234,7 +249,7 @@ def _plot_clusters(ax: plt.Axes,
             m = c.median()
             ax.text(m[0], m[1], str(label), weight='bold')
     if show_legend:
-        lgd = ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+        lgd = ax.legend(loc=legend_loc, bbox_to_anchor=legend_anchor,
                         fancybox=False, shadow=False, ncol=2)
         for i in range(len(lgd.legendHandles)):
             lgd.legendHandles[i]._sizes = [30]
@@ -323,6 +338,28 @@ def compare_datasets(tsne: pd.DataFrame, path: str,
                           cluster_labels_auto)
 
     plt.savefig(path, bbox_extra_artists=(lgd1, lgd2),
+                bbox_inches='tight')
+    plt.close(fig)
+
+
+def highlight_clusters(
+        original: pd.DataFrame, pcad: pd.DataFrame,
+        embedding: pd.DataFrame, figsize: tuple[int],
+        path: str, highlights: set[int],
+        clusters: np.ndarray, cluster_names: list[str],
+        labels: np.ndarray):
+    fig = plt.figure(figsize=figsize)
+    ax = plt.axes()
+    hs = sorted(list(highlights))
+    labels_iter = (labels[j] if labels[j] in highlights else -1
+                   for j in range(len(labels)))
+    labels_local = np.fromiter(labels_iter, dtype=int)
+    clusters_local = np.array([-1] + hs)
+    description_local = np.array(['all'] + cluster_names)
+    lgd = _plot_clusters(
+        ax, embedding, labels_local, clusters_local, description_local,
+        legend_loc='best', legend_anchor=None)
+    plt.savefig(path, bbox_extra_artists=(lgd,),
                 bbox_inches='tight')
     plt.close(fig)
 
