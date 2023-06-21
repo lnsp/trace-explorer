@@ -201,6 +201,7 @@ def visualize_with_params():
     perplexity = float(payload['perplexity'])
     iterations = int(payload['iterations'])
     excluded_columns = payload['exclude']
+    skipped_clusters = set(int(i) for i in payload['skippedClusters'])
 
     # do computation
     df = pd.read_parquet(os.path.join(data_directory, source))
@@ -222,13 +223,13 @@ def visualize_with_params():
     # TODO: Find better path naming scheme
     tmppath = tempfile.mktemp('.png')
     visualize.visualize(df_tsne, labels, clusters, cluster_labels,
-                        tmppath)
-
+                        tmppath, legend=None, skip_labels=skipped_clusters)
+    lgd_colors = visualize.get_legend_colors(clusters)
 
     with open(tmppath, 'rb') as f:
         png_binary_data = f.read()
     png_data = b64encode(png_binary_data).decode('utf-8')
-    return {'data': png_data}
+    return {'data': png_data, 'legend': {'colors': lgd_colors, 'labels': cluster_labels, 'indices': clusters.tolist()}}
 
 
 def open_browser(url):

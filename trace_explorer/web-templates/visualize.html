@@ -108,9 +108,16 @@
   <div class="text-lg font-medium p-4 border-b border-gray-300">
     Output
   </div>
-  <div class="w-full overflow-y-auto flex-grow relative">
-    <img id="output"
-         class="max-h-full">
+  <div class="w-full overflow-y-auto flex-grow relative flex">
+    <div class="max-w-full max-h-full border-r border-gray-300">
+      <img id="output"
+           class="max-h-full">
+    </div>
+    <div id="visualize-legend" class="hidden">
+      <h3 class="text-md font-medium p-4">Legend</h3>
+      <ul id="output-legend" class="px-2">
+      </ul>
+    </div>
   </div>
   <div class="border-t border-gray-300 p-4 max-w-full">
     <div class="text-lg font-medium mb-4 flex gap-4 items-center">
@@ -204,6 +211,8 @@
     navigator.clipboard.writeText($('#cmd-string').text())
   })
 
+  let skippedItems = {};
+
   $('#visualize-submit').click((event) => {
     event.preventDefault();
 
@@ -213,12 +222,14 @@
     let source = $('#source-selector').val();
     let iterations = $('#iterations-slider').val();
 
+    let skippedClusters = Object.keys(skippedItems);
+
     // send configuration to server, request computation
     $('#in-progress').removeClass('hidden')
     $('#go-submit').addClass('hidden')
     $('#visualize-submit').attr('disabled', true)
     $.ajax('/visualize', {
-      data: JSON.stringify({ threshold, perplexity, exclude, source, iterations }),
+      data: JSON.stringify({ threshold, perplexity, exclude, source, iterations, skippedClusters }),
       contentType: 'application/json',
       type: 'POST',
       success: (response) => {
@@ -226,6 +237,34 @@
         $('#in-progress').addClass('hidden')
         $('#go-submit').removeClass('hidden')
         $('#visualize-submit').attr('disabled', false)
+
+        // generate the fresh legend
+        $('#output-legend').empty();
+        skippedFor = [threshold, perplexity, exclude, source, iterations];
+        for (let i = 0; i < response.legend.colors.length; i++) {
+          let legendCluster = response.legend.indices[i];
+          let legendItem = $('<li>').addClass('flex items-center border-t border-gray-300').attr('x-attr-index', response.legend.indices[i])
+          if (legendCluster in skippedItems) {
+            legendItem.addClass('opacity-50')
+            legendItem.addClass('line-through')
+          }
+          legendItem.append($('<span>').addClass('inline-block w-6 h-6 mr-2').css('background-color', response.legend.colors[i]))
+          legendItem.append($('<span>').text(response.legend.labels[i]))
+          legendItem.click(() => {
+            if (legendCluster in skippedItems) {
+              delete skippedItems[legendCluster]
+              legendItem.removeClass('opacity-50')
+              legendItem.removeClass('line-through')
+            } else {
+              skippedItems[legendCluster] = []
+              legendItem.addClass('opacity-50')
+              legendItem.addClass('line-through')
+            }
+            $('#visualize-submit').trigger('click');
+          })
+          $('#output-legend').append(legendItem)
+        }
+        $('#visualize-legend').removeClass('hidden')
       },
       error: (xhr, status, text) => {
         showErrorModal(text)

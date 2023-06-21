@@ -3,6 +3,7 @@ import pandas as pd
 import pandas.util
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as pltc
 import math
 import re
 import joblib
@@ -193,7 +194,7 @@ def generalize_clusters(df: pd.DataFrame, df_labels: np.ndarray):
 def visualize(df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray,
               cluster_labels: list[str], path: str, figsize=(10, 10),
               label_graph=False, legend=(0.5, -0.05), legendloc='upper center',
-              legendtitle=None):
+              legendtitle=None, skip_labels=tuple()):
     plt.figure(figsize=figsize)
     ax = plt.axes()
 
@@ -201,6 +202,9 @@ def visualize(df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray,
     for axis in [ax.get_xaxis(), ax.get_yaxis()]:
         axis.set_visible(False)
         axis.set_ticks([])
+    
+    ax.set_xlim(df[0].min(), df[0].max())
+    ax.set_ylim(df[1].min(), df[1].max())
 
     for label, text in zip(clusters, cluster_labels):
         c = df[df_labels == label]
@@ -211,16 +215,31 @@ def visualize(df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray,
             color = plt.cm.tab20(label)
         else:
             color = plt.cm.get_cmap('hsv')(label / len(clusters))
-        ax.scatter(c[0], c[1], c=[color] * len(c), label=text)
+        if label not in skip_labels:
+            ax.scatter(c[0], c[1], c=[color] * len(c), label=text)
         if label_graph:
             m = c.median()
             ax.text(m[0], m[1], str(label), weight='bold')
-    lgd = plt.legend(loc=legendloc, bbox_to_anchor=legend,
-                     fancybox=False, shadow=False, ncol=1, title=legendtitle)
-    for i in range(len(lgd.legendHandles)):
-        lgd.legendHandles[i]._sizes = [30]
-    plt.savefig(path, bbox_extra_artists=(lgd,), bbox_inches='tight')
+    extra_artists=tuple()
+    if legend:
+        lgd = plt.legend(loc=legendloc, bbox_to_anchor=legend,
+                         fancybox=False, shadow=False, ncol=1, title=legendtitle)
+        for i, _ in enumerate(lgd.legendHandles):
+            lgd.legendHandles[i]._sizes = [30]
+        extra_artists = (lgd,)
+    plt.savefig(path, bbox_extra_artists=extra_artists, bbox_inches='tight')
 
+def get_legend_colors(clusters):
+    colors = []
+    for label in zip(clusters):
+        if len(clusters) <= 10:
+            color = plt.cm.tab10(label)
+        elif len(clusters) <= 20:
+            color = plt.cm.tab20(label)
+        else:
+            color = plt.cm.get_cmap('hsv')(label / len(clusters))
+        colors.append(pltc.to_hex(color))
+    return colors
 
 def _plot_clusters(ax: plt.Axes,
                    df: pd.DataFrame, df_labels: np.ndarray,
