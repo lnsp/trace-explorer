@@ -136,3 +136,13 @@ trace_explorer visualize --source sample-data/raw.parquet --threshold 20
 # Compare two sampled datasets
 trace_explorer compare --superset sample-data/raw.parquet --subset sample-data/raw2.parquet
 ```
+
+## Run in debug mode
+
+If you want to extend Trace Explorer or fix a bug, you might want to run the web frontend
+in debug mode (enabling hot reloading of all relevant components).
+
+```bash
+# NOBROWSER will disable opening a browser up for the application.
+NOBROWSER=yes flask --app trace_explorer.web --debug run
+```
