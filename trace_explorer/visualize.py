@@ -1,13 +1,14 @@
-from sklearn import preprocessing, decomposition, manifold, cluster, ensemble
-import pandas as pd
-import pandas.util
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.colors as pltc
+"""Provides a common set of tools to visualize datasets."""
+
 import math
+import os
 import re
 import joblib
-import os
+import matplotlib.pyplot as plt
+import matplotlib.colors as pltc
+import numpy as np
+import pandas as pd
+from sklearn import preprocessing, decomposition, manifold, cluster, ensemble
 
 
 def numeric_subset(df: pd.DataFrame):
