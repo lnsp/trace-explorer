@@ -13,11 +13,13 @@ import shutil
 import logging
 import webbrowser
 import threading
+import matplotlib
 
 template_path = os.path.join(os.path.dirname(__loader__.path), 'web-templates')
 app = Flask(__name__, template_folder=template_path)
 data_directory = os.path.curdir
 data_buckets = {}
+matplotlib.use('agg')
 
 
 @app.route("/")
@@ -201,7 +203,7 @@ def visualize_with_params():
     perplexity = float(payload['perplexity'])
     iterations = int(payload['iterations'])
     excluded_columns = payload['exclude']
-    skipped_clusters = set(int(i) for i in payload['skippedClusters'])
+    hidden_clusters = set(int(i) for i in payload['hidden'])
 
     # do computation
     df = pd.read_parquet(os.path.join(data_directory, source))
@@ -223,7 +225,7 @@ def visualize_with_params():
     # TODO: Find better path naming scheme
     tmppath = tempfile.mktemp('.png')
     visualize.visualize(df_tsne, labels, clusters, cluster_labels,
-                        tmppath, legend=None, skip_labels=skipped_clusters)
+                        tmppath, legend=None, skip_labels=hidden_clusters)
     lgd_colors = visualize.get_legend_colors(clusters)
 
     with open(tmppath, 'rb') as f:
@@ -237,8 +239,10 @@ def open_browser(url):
 
 
 def serve(dir, host, port):
+
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.ERROR)
 
-    threading.Timer(1, open_browser, ['http://%s:%d' % (host, port)]).start()
+    if not os.getenv('NOBROWSER'):
+        threading.Timer(1, open_browser, ['http://%s:%d' % (host, port)]).start()
     app.run(host=host, port=port)

@@ -3,68 +3,68 @@
 {% block title %}Visualize{% endblock %}
 
 {% block content %}
-<div class="p-4 border-r border-gray-300 shrink-0 w-96">
-  <form class="flex flex-col gap-4 h-full">
-    <div class="flex gap-2 items-center text-lg font-medium">
+<div class="p-4 border-r border-gray-300 shrink-0 w-80">
+  <form class="flex flex-col gap-2 h-full">
+    <div class="flex gap-2 items-center text-md font-medium">
       <label for="source">Dataset</label>
     </div>
     <div class="">
       <select name="source"
               id="source-selector"
-              class="border border-gray-900 h-8 px-2 w-full">
+              class="border border-gray-900 text-sm h-8 px-2 w-full">
       </select>
     </div>
-    <div class="flex gap-2 items-center text-lg font-medium">
+    <div class="flex gap-2 items-center text-md font-medium">
       <label for="columns">Exclude features</label>
     </div>
     <div class="flex-grow flex flex-col">
       <select name="columns"
               id="column-selector"
               multiple
-              class="border border-gray-900 h-12 px-2 w-full h-24 flex-grow">
+              class="border border-gray-900 text-sm h-12 px-2 w-full h-24 flex-grow">
       </select>
     </div>
-    <div class="flex gap-2 items-center text-lg font-medium">
+    <div class="flex gap-2 items-center text-md font-medium">
       <label for="params">Parameters</label>
     </div>
     <div class="flex items-center gap-2">
       <label for="threshold"
-             class="w-24">Threshold</label>
+             class="w-24 text-sm">Threshold</label>
       <input type="range"
              name="threshold"
              id="threshold-slider"
-             class="flex-grow"
+             class="flex-grow text-sm"
              min="1"
              max="50"
              value="20">
       <div id="threshold-value"
-           class="w-12 h-6 p-1 border border-black flex items-center"></div>
+           class="w-12 text-sm h-6 p-1 border border-black flex items-center"></div>
     </div>
     <div class="flex items-center gap-2">
       <label for="perplexity"
-             class="w-24">Perplexity</label>
+             class="w-24 text-sm">Perplexity</label>
       <input type="range"
              name="perplexity"
              id="perplexity-slider"
-             class="flex-grow"
+             class="flex-grow text-sm"
              min="10"
              max="50"
              value="30">
       <div id="perplexity-value"
-           class="w-12 h-6 p-1 border border-black flex items-center"></div>
+           class="w-12 text-sm h-6 p-1 border border-black flex items-center"></div>
     </div>
     <div class="flex items-center gap-2">
       <label for="iterations"
-             class="w-24">Iterations</label>
+             class="w-24 text-sm">Iterations</label>
       <input type="range"
              name="iterations"
              id="iterations-slider"
-             class="flex-grow"
+             class="flex-grow text-sm"
              min="500"
              max="5000"
              value="2000">
       <div id="iterations-value"
-           class="w-12 h-6 p-1 border border-black flex items-center"></div>
+           class="w-12 text-sm h-6 p-1 border border-black flex items-center"></div>
     </div>
     <div class="flex gap-2 items-center">
       <button role="submit"
@@ -104,23 +104,21 @@
     </div>
   </form>
 </div>
-<div class="flex flex-grow flex-col min-h-full relative">
-  <div class="text-lg font-medium p-4 border-b border-gray-300">
+<div class="flex flex-grow flex-col min-h-full relative overflow-x-auto">
+  <div class="text-md font-medium p-4 border-b border-gray-300">
     Output
   </div>
   <div class="w-full overflow-y-auto flex-grow relative flex">
-    <div class="max-w-full max-h-full border-r border-gray-300">
-      <img id="output"
-           class="max-h-full">
-    </div>
-    <div id="visualize-legend" class="hidden">
-      <h3 class="text-md font-medium p-4">Legend</h3>
-      <ul id="output-legend" class="px-2">
-      </ul>
-    </div>
+    <img id="output"
+         class="max-h-full">
+  </div>
+  <div id="visualize-legend" class="hidden border-t border-gray-300">
+    <h3 class="text-md font-medium p-4">Legend</h3>
+    <ul id="output-legend" class="px-2 text-xs grid-cols-2 grid">
+    </ul>
   </div>
   <div class="border-t border-gray-300 p-4 max-w-full">
-    <div class="text-lg font-medium mb-4 flex gap-4 items-center">
+    <div class="text-md font-medium mb-4 flex gap-4 items-center">
       <div>
         Command line
       </div>
@@ -142,7 +140,7 @@
              class="hidden"
              id="cmd-copy-buffer">
     </div>
-    <div class="monospace bg-gray-100 text-sm overflow-x-auto p-2 flex gap-4 text-gray-900 underline-offset-4">
+    <div class="monospace bg-gray-100 text-xs overflow-x-auto p-2 flex gap-4 text-gray-900 underline-offset-4">
       $
       <pre
            id="cmd-string">trace_explorer visualize --source <span id="cmd-source" class="text-gray-600 underline decoration-dashed"></span> --threshold <span id="cmd-threshold" class="text-gray-600 underline decoration-dashed"></span> --perplexity <span id="cmd-perplexity" class="text-gray-600 underline decoration-dashed"></span> --n_iter <span id="cmd-iterations" class="text-gray-600 underline decoration-dashed"></span><span id="cmd-exclude" class=""></span></pre>
@@ -150,6 +148,14 @@
   </div>
 </div>
 <script>
+  let legendLabelStates = {};
+  let ignoreLegendLabelStates = true;
+  function ignoreLegend() {
+    ignoreLegendLabelStates = true;
+    $('#visualize-legend').addClass('hidden')
+  }
+
+
   $.post('/list_sources', {}, (data) => {
     console.log(data);
 
@@ -164,6 +170,8 @@
   $('#source-selector').change((event) => {
     if (!event.target.value) return;
 
+    ignoreLegend()
+
     $.post('/list_source_columns', { source: event.target.value }, (data) => {
       $('#column-selector').empty();
       for (let s of data.columns) {
@@ -174,6 +182,8 @@
     $('#cmd-source').text(event.target.value)
   })
   $('#column-selector').change((event) => {
+    ignoreLegend()
+
     let selected = [...event.target.options]
       .filter(option => option.selected)
       .map(option => option.value);
@@ -187,21 +197,17 @@
     }
   })
 
-  $('#threshold-slider').on('input change', (event) => {
-    $('#threshold-value').text(event.target.value)
-    $('#cmd-threshold').text(event.target.value)
-  })
-  $('#perplexity-slider').on('input change', (event) => {
-    $('#perplexity-value').text(event.target.value)
-    $('#cmd-perplexity').text(event.target.value)
-  })
-  $('#iterations-slider').on('input change', (event) => {
-    $('#iterations-value').text(event.target.value)
-    $('#cmd-iterations').text(event.target.value)
-  })
-  $('#threshold-slider').trigger('change')
-  $('#perplexity-slider').trigger('change')
-  $('#iterations-slider').trigger('change')
+  function installSliderHandler(prop) {
+    $(`#${prop}-slider`).on('input change', (event) => {
+      $(`#${prop}-value`).text(event.target.value)
+      $(`#cmd-${prop}`).text(event.target.value)
+      ignoreLegend()
+    })
+    $(`#${prop}-slider`).trigger('change')
+  }
+  installSliderHandler('threshold')
+  installSliderHandler('perplexity')
+  installSliderHandler('iterations')
   $('#cmd-copy').click((event) => {
     event.preventDefault();
 
@@ -210,8 +216,6 @@
     //#('#cmd-copy-buffer').setSelectionRange(0, 99999);
     navigator.clipboard.writeText($('#cmd-string').text())
   })
-
-  let skippedItems = {};
 
   $('#visualize-submit').click((event) => {
     event.preventDefault();
@@ -222,14 +226,21 @@
     let source = $('#source-selector').val();
     let iterations = $('#iterations-slider').val();
 
-    let skippedClusters = Object.keys(skippedItems);
+    let hiddenClusters = ignoreLegendLabelStates ? [] : Object.keys(legendLabelStates);
 
     // send configuration to server, request computation
     $('#in-progress').removeClass('hidden')
     $('#go-submit').addClass('hidden')
     $('#visualize-submit').attr('disabled', true)
     $.ajax('/visualize', {
-      data: JSON.stringify({ threshold, perplexity, exclude, source, iterations, skippedClusters }),
+      data: JSON.stringify({
+        threshold: threshold,
+        perplexity: perplexity,
+        exclude: exclude,
+        source: source,
+        iterations: iterations,
+        hidden: hiddenClusters,
+      }),
       contentType: 'application/json',
       type: 'POST',
       success: (response) => {
@@ -240,23 +251,23 @@
 
         // generate the fresh legend
         $('#output-legend').empty();
-        skippedFor = [threshold, perplexity, exclude, source, iterations];
+        legendLabelStates = ignoreLegendLabelStates ? {} : legendLabelStates;
         for (let i = 0; i < response.legend.colors.length; i++) {
           let legendCluster = response.legend.indices[i];
           let legendItem = $('<li>').addClass('flex items-center border-t border-gray-300').attr('x-attr-index', response.legend.indices[i])
-          if (legendCluster in skippedItems) {
+          if (legendCluster in legendLabelStates) {
             legendItem.addClass('opacity-50')
             legendItem.addClass('line-through')
           }
-          legendItem.append($('<span>').addClass('inline-block w-6 h-6 mr-2').css('background-color', response.legend.colors[i]))
+          legendItem.append($('<span>').addClass('inline-block w-4 h-4 mr-2').css('background-color', response.legend.colors[i]))
           legendItem.append($('<span>').text(response.legend.labels[i]))
           legendItem.click(() => {
-            if (legendCluster in skippedItems) {
-              delete skippedItems[legendCluster]
+            if (legendCluster in legendLabelStates) {
+              delete legendLabelStates[legendCluster]
               legendItem.removeClass('opacity-50')
               legendItem.removeClass('line-through')
             } else {
-              skippedItems[legendCluster] = []
+              legendLabelStates[legendCluster] = null
               legendItem.addClass('opacity-50')
               legendItem.addClass('line-through')
             }
@@ -265,6 +276,7 @@
           $('#output-legend').append(legendItem)
         }
         $('#visualize-legend').removeClass('hidden')
+        ignoreLegendLabelStates = false;
       },
       error: (xhr, status, text) => {
         showErrorModal(text)
