@@ -5,23 +5,23 @@
 {% block content %}
 <div class="p-4 border-r border-gray-300 shrink-0 w-96">
   <form class="flex flex-col gap-4 h-full">
-    <div class="flex gap-2 items-center text-lg font-medium">
+    <div class="flex gap-2 items-center text-md font-medium">
       <label for="source">Dataset</label>
     </div>
     <div class="">
       <select name="source"
               id="source-selector"
-              class="border border-gray-900 h-8 px-2 w-full">
+              class="border border-gray-900 h-8 px-2 w-full text-sm">
       </select>
     </div>
-    <div class="flex gap-2 items-center text-lg font-medium">
+    <div class="flex gap-2 items-center text-md font-medium">
       <label for="query">Query</label>
     </div>
     <div class="flex-grow">
       <textarea name="query"
                 id="query"
                 placeholder="SELECT * FROM dataset"
-                class="border border-gray-900 h-full px-2 w-full font-mono" disabled></textarea>
+                class="border border-gray-900 text-sm h-full px-2 w-full font-mono" disabled></textarea>
     </div>
     <div class="flex gap-2 items-center">
       <input type="checkbox" id="copy-columns">
@@ -80,11 +80,11 @@
   </form>
 </div>
 <div class="flex flex-grow flex-col min-h-full overflow-x-auto relative">
-  <div class="text-lg font-medium p-4 border-b border-gray-300">
+  <div class="text-md font-medium p-4 border-b border-gray-300">
     Overview
   </div>
   <div class="max-w-screen overflow-x-auto flex-grow relative">
-    <table class="w-full border-r border-b border-collapse" id="overview-table"></table>
+    <table class="w-full text-xs border-r border-b border-collapse" id="overview-table"></table>
   </div>
 </div>
 
@@ -110,9 +110,10 @@
       for (let col in data.columns) {
         let coldata = data.columns[col];
         let tablerow = $('<tr>');
-        tablerow.append($('<td>', { text: col, class: 'p-2 border-r border-t border-b border-slate-300'}));
+        tablerow.append($('<td>', { text: col, class: 'p-2 border-r border-t border-b border-slate-300 font-mono'}));
         for (let stat of coldata) {
-          tablerow.append($('<td>', { text: stat.toString(), class: 'p-2 border border-slate-300' }));
+          let statString = (typeof stat === "number" && !Number.isSafeInteger(stat)) ? stat.toFixed(4) : stat.toString();
+          tablerow.append($('<td>', { text: statString, class: 'p-2 border border-slate-300 font-mono' }));
         }
         tablebody.append(tablerow);
       }
