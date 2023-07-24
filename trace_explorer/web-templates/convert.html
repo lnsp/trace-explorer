@@ -62,7 +62,7 @@
              id="tracename"
              name="tracename"
              placeholder="mytrace"
-             pattern="[A-Za-z]+"
+             pattern="[A-Za-z0-9_-]+"
              class="border border-gray-900 h-8 px-2 w-full">
     </div>
     <div class="flex gap-2 items-center mt-4">
@@ -100,6 +100,10 @@
         </div>
         Convert
       </button>
+      <span id="tracefiles-upload-tracker"
+            class="hidden">
+        Uploaded trace <span id="tracefiles-upload-tracker-count"></span>.
+      </span>
       <span id="convert-success"
             class="hidden">
         Trace has been saved.
@@ -158,7 +162,7 @@
     })
   })
 
-  $('#tracefiles').on('change', (event) => {
+  $('#tracefiles').on('change', async (event) => {
     let files = event.target.files;
 
     // Increase upload_target_count
@@ -170,7 +174,7 @@
       formData.append('bucket', state.bucket)
       formData.append('file', item)
       // Upload selected file via /upload
-      $.ajax('/upload', {
+      await $.ajax('/upload', {
         data: formData,
         type: 'POST',
         success: (data, status, xhr) => {
