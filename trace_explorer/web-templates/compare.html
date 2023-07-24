@@ -3,273 +3,257 @@
 {% block title %}Compare {% endblock %}
 
 {% block content %}
-<div class="p-4 border-r border-gray-300 shrink-0 w-96">
-  <form class="flex flex-col gap-4 h-full">
-    <div class="flex gap-2 items-center text-lg font-medium">
-      <label for="source">Datasets</label>
-    </div>
-    <div class="flex-grow flex flex-col">
-      <select name="sources"
-              id="source-selector"
-              multiple
-              class="border border-gray-900 h-12 px-2 w-full h-24 flex-grow">
+<script>
+  async function listSources($data) {
+    try {
+      let response = await $.post('/list_sources');
+      $data.sources = response.sources;
+    } catch (e) {
+      showErrorModal(e);
+    }
+  }
+  async function listColumns($data) {
+    try {
+      let response = await $.ajax('/list_compare_columns', {
+        data: JSON.stringify({ sources: $data.selectedSources }),
+        contentType: 'application/json',
+        type: 'POST'
+      });
+      $data.columns = response.columns;
+    } catch (e) {
+      showErrorModal(e);
+    }
+  }
+  async function updateComparisonView($data) {
+    try {
+      let response = await $.ajax('/compare', {
+        data: JSON.stringify({
+          threshold: $data.threshold,
+          perplexity: $data.perplexity,
+          exclude: $data.excludedColumns,
+          sources: $data.selectedSources,
+          iterations: $data.iterations,
+        }),
+        contentType: 'application/json',
+        type: 'POST',
+      });
+      $data.plots = [];
+      $data.plots.push({
+        title: 'Overview',
+        content: response.overview
+      });
+      $data.plots.push({
+        title: 'All clusters',
+        content: response.clusters_overview,
+      });
+      for (var i = 0; i < response.clusters.length; i++) {
+        $data.plots.push({
+          title: `Cluster ${i}`,
+          content: response.clusters[i],
+        });
+      }
+      $data.selectedPlot = 0;
+    } catch (e) {
+      showErrorModal(e);
+    }
+  }
+  async function copyToClipboard() {
+    navigator.clipboard.writeText($('#cmd-string').text())
+  }
+</script>
+<div
+  class="min-h-screen max-h-screen flex relative flex-grow"
+  x-data="
+  {
+    sources: [],
+    selectedSources: [],
+    columns: [],
+    excludedColumns: [],
+    threshold: 20,
+    perplexity: 30,
+    iterations: 2000,
+    inflight: false,
+    plots: [],
+    selectedPlot: undefined,
+    clipboard: '',
+  }
+" x-init="listSources($data)">
+  <div class="p-4 border-r border-gray-300 shrink-0 w-96">
+    <form class="flex flex-col gap-4 h-full"
+          @submit.prevent="updateComparisonView($data)">
+      <div class="flex gap-2 items-center text-lg font-medium">
+        <label for="source">Datasets</label>
+      </div>
+      <div class="flex-grow flex flex-col">
+        <select name="sources"
+                multiple
+                class="border border-gray-900 h-12 px-2 w-full h-24 flex-grow"
+                x-model="selectedSources"
+                @change="listColumns($data)">
+          <template x-for="source in sources">
+            <option x-text="source"></option>
+          </template>
+        </select>
+      </div>
+      <div class="flex gap-2 items-center text-lg font-medium">
+        <label for="columns">Exclude features</label>
+      </div>
+      <div class="flex-grow flex flex-col">
+        <select name="columns"
+                multiple
+                x-model="excludedColumns"
+                class="border border-gray-900 h-12 px-2 w-full h-24 flex-grow">
+          <template x-for="column in columns">
+            <option x-text="column"></option>
+          </template>
+        </select>
+      </div>
+      <div class="flex gap-2 items-center text-lg font-medium">
+        <label for="params">Parameters</label>
+      </div>
+      <div class="flex items-center gap-2">
+        <label for="threshold-slider"
+               class="w-24">Threshold</label>
+        <input type="range"
+               x-model="threshold"
+               class="flex-grow"
+               id="threshold-slider"
+               min="1"
+               max="50"
+               value="20">
+        <div id="threshold-value"
+             class="w-12 h-6 p-1 border border-black flex items-center"
+             x-text="threshold"></div>
+      </div>
+      <div class="flex items-center gap-2">
+        <label for="perplexity-slider"
+               class="w-24">Perplexity</label>
+        <input type="range"
+               name="perplexity"
+               id="perplexity-slider"
+               x-model="perplexity"
+               class="flex-grow"
+               min="10"
+               max="50"
+               value="30">
+        <div id="perplexity-value"
+             class="w-12 h-6 p-1 border border-black flex items-center"
+             x-text="perplexity"></div>
+      </div>
+      <div class="flex items-center gap-2">
+        <label for="iterations-slider"
+               class="w-24">Iterations</label>
+        <input type="range"
+               name="iterations"
+               id="iterations-slider"
+               x-model="iterations"
+               class="flex-grow"
+               min="500"
+               max="5000"
+               value="2000">
+        <div id="iterations-value"
+             class="w-12 h-6 p-1 border border-black flex items-center"
+             x-text="iterations"></div>
+      </div>
+      <div class="flex gap-2 items-center">
+        <button role="submit"
+                :disabled="$data.inflight"
+                class="bg-black flex items-center font-medium shadow-lg hover:shadow-xl hover:bg-gray-800 py-2 px-4 text-white">
+          <div class="h-5 w-5 -ml-1 mr-3">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 class="h-5 w-5 text-white"
+                 fill="none"
+                 viewBox="0 0 24 24"
+                 stroke="currentColor"
+                 stroke-width="2"
+                 x-show="inflight">
+              <path stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+            <svg x-show="inflight"
+                 class="animate-spin h-5 w-5 text-white hidden"
+                 xmlns="http://www.w3.org/2000/svg"
+                 fill="none"
+                 viewBox="0 0 24 24">
+              <circle class="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      stroke-width="4"></circle>
+              <path class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+              </path>
+            </svg>
+          </div>
+          Compare
+        </button>
+      </div>
+    </form>
+  </div>
+  <div class="flex flex-grow flex-col min-h-full relative min-w-0">
+    <div class="text-lg font-medium p-4 border-b border-gray-300 flex justify-between">
+      <div>Output</div>
+      <select class="border border-gray-900 h-8 px-2 mx-2"
+              x-model="selectedPlot">
+        <template x-for="(plot, index) in plots">
+          <option x-text="plot.title"
+                  :value="index"></option>
+        </template>
       </select>
     </div>
-    <div class="flex gap-2 items-center text-lg font-medium">
-      <label for="columns">Exclude features</label>
+    <div class="w-full overflow-y-auto flex-grow relative">
+      <template x-if="plots[selectedPlot]">
+        <img id="output"
+             :src="`data:image/png;base64,${plots[selectedPlot].content}`"
+             class="max-h-full">
+      </template>
     </div>
-    <div class="flex-grow flex flex-col">
-      <select name="columns"
-              id="column-selector"
-              multiple
-              class="border border-gray-900 h-12 px-2 w-full h-24 flex-grow">
-      </select>
-    </div>
-    <div class="flex gap-2 items-center text-lg font-medium">
-      <label for="params">Parameters</label>
-    </div>
-    <div class="flex items-center gap-2">
-      <label for="threshold"
-             class="w-24">Threshold</label>
-      <input type="range"
-             name="threshold"
-             class="flex-grow"
-             id="threshold-slider"
-             min="1"
-             max="50"
-             value="20">
-      <div id="threshold-value"
-           class="w-12 h-6 p-1 border border-black flex items-center"></div>
-    </div>
-    <div class="flex items-center gap-2">
-      <label for="perplexity"
-             class="w-24">Perplexity</label>
-      <input type="range"
-             name="perplexity"
-             id="perplexity-slider"
-             class="flex-grow"
-             min="10"
-             max="50"
-             value="30">
-      <div id="perplexity-value"
-           class="w-12 h-6 p-1 border border-black flex items-center"></div>
-    </div>
-    <div class="flex items-center gap-2">
-      <label for="iterations"
-             class="w-24">Iterations</label>
-      <input type="range"
-             name="iterations"
-             id="iterations-slider"
-             class="flex-grow"
-             min="500"
-             max="5000"
-             value="2000">
-      <div id="iterations-value"
-           class="w-12 h-6 p-1 border border-black flex items-center"></div>
-    </div>
-    <div class="flex gap-2 items-center">
-      <button role="submit"
-              id="visualize-submit"
-              class="bg-black flex items-center font-medium shadow-lg hover:shadow-xl hover:bg-gray-800 py-2 px-4 text-white">
-        <div class="h-5 w-5 -ml-1 mr-3">
+    <div class="border-t border-gray-300 p-4">
+      <div class="text-lg font-medium mb-4 flex gap-4 items-center">
+        <div>
+          Command line
+        </div>
+
+        <button class="text-gray-500 hover:text-gray-800 transition"
+                id="cmd-copy">
           <svg xmlns="http://www.w3.org/2000/svg"
-               id="go-submit"
-               class="h-5 w-5 text-white"
+               class="h-5 w-5"
                fill="none"
                viewBox="0 0 24 24"
                stroke="currentColor"
                stroke-width="2">
             <path stroke-linecap="round"
                   stroke-linejoin="round"
-                  d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
           </svg>
-          <svg id="in-progress"
-               class="animate-spin h-5 w-5 text-white hidden"
-               xmlns="http://www.w3.org/2000/svg"
-               fill="none"
-               viewBox="0 0 24 24">
-            <circle class="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    stroke-width="4"></circle>
-            <path class="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-            </path>
-          </svg>
-        </div>
-        Compare
-      </button>
-    </div>
-  </form>
-</div>
-<div class="flex flex-grow flex-col min-h-full relative min-w-0">
-  <div class="text-lg font-medium p-4 border-b border-gray-300 flex justify-between">
-    <div>Output</div>
-    <select id="output-selector" class="hidden border border-gray-900 h-8 px-2 mx-2">
-    </select>
-  </div>
-  <div class="w-full overflow-y-auto flex-grow relative">
-    <img id="output"
-         class="max-h-full">
-  </div>
-  <div class="border-t border-gray-300 p-4 max-w-full">
-    <div class="text-lg font-medium mb-4 flex gap-4 items-center">
-      <div>
-        Command line
+        </button>
       </div>
-
-      <button class="text-gray-500 hover:text-gray-800 transition"
-              id="cmd-copy">
-        <svg xmlns="http://www.w3.org/2000/svg"
-             class="h-5 w-5"
-             fill="none"
-             viewBox="0 0 24 24"
-             stroke="currentColor"
-             stroke-width="2">
-          <path stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-        </svg>
-      </button>
-      <input type="text"
-             class="hidden"
-             id="cmd-copy-buffer">
-    </div>
-    <div class="monospace bg-gray-100 text-sm overflow-x-auto p-2 flex gap-4 text-gray-900 underline-offset-4">
-      $
-      <pre
-           id="cmd-string">trace_explorer compare<span id="cmd-source"></span> --threshold <span id="cmd-threshold" class="text-gray-600 underline decoration-dashed"></span> --tsne_perplexity <span id="cmd-perplexity" class="text-gray-600 underline decoration-dashed"></span> --tsne_n_iter <span id="cmd-iterations" class="text-gray-600 underline decoration-dashed"></span><span id="cmd-exclude"></span></span></pre>
+      <div id="cmd-string"
+           class="font-mono whitespace-nowrap bg-gray-100 text-sm overflow-x-scroll p-2 flex gap-4 text-gray-900 underline-offset-4">
+          <span>trace_explorer compare</span>
+          <template x-for="(source, index) in selectedSources">
+            <span>
+              <span x-show="index === 0">--superset</span>
+              <span x-show="index > 0">--subset</span>
+              <span class="text-gray-600 underline decoration-dashed"
+                    x-text="source"></span>
+            </span>
+          </template>
+          <span x-text="`--threshold ${threshold}`"
+                class="text-gray-600 underline decoration-dashed"></span>
+          </span>
+          <span x-text="`--tsne_perplexity ${perplexity}`"
+                class="text-gray-600 underline decoration-dashed"></span>
+          <span x-text="`--tsne_n_iter ${iterations}`"
+                class="text-gray-600 underline decoration-dashed"></span>
+          <template x-for="column in excludedColumns">
+            <span x-text="`--exclude ${column}`"></span>
+          </template>
+      </div>
     </div>
   </div>
 </div>
-<script>
-  $.post('/list_sources', {}, (data) => {
-    $('#source-selector').empty();
-    for (let s of data.sources) {
-      $('#source-selector').append($("<option>").val(s).text(s))
-    }
-  })
-
-  $('#source-selector').change((event) => {
-    let sources = [...event.target.options]
-      .filter(option => option.selected)
-      .map(option => option.value);
-
-    $.ajax('/list_compare_columns', {
-      data: JSON.stringify({ sources }),
-      contentType: 'application/json',
-      type: 'POST',
-      success: (data) => {
-        $('#column-selector').empty();
-        for (let s of data.columns) {
-          $('#column-selector').append($("<option>").val(s).text(s))
-        }
-      },
-      error: (xhr, status, text) => {
-        showErrorModal(text)
-      }
-    });
-
-    // First item is superset, while all others are subset
-    $('#cmd-source').empty()
-    sources.forEach((value, index) => {
-      if (index === 0) {
-        $('#cmd-source').append($('<span>').text(' --superset ').append($('<span>').addClass('text-gray-600 underline decoration-dashed').text(value)))
-      } else {
-        $('#cmd-source').append($('<span>').text(' --subset ').append($('<span>').addClass('text-gray-600 underline decoration-dashed').text(value)))
-      }
-    })
-  })
-
-  $('#column-selector').change((event) => {
-    let selected = [...event.target.options]
-      .filter(option => option.selected)
-      .map(option => option.value);
-
-    // Build list of elements
-    $('#cmd-exclude').empty();
-    for (let s of selected) {
-      $('#cmd-exclude').append($("<span>").text(` --exclude ${s}`))
-    }
-  })
-
-  $('#threshold-slider').on('input change', (event) => {
-    $('#threshold-value').text(event.target.value)
-    $('#cmd-threshold').text(event.target.value)
-  })
-  $('#perplexity-slider').on('input change', (event) => {
-    $('#perplexity-value').text(event.target.value)
-    $('#cmd-perplexity').text(event.target.value)
-  })
-  $('#iterations-slider').on('input change', (event) => {
-    $('#iterations-value').text(event.target.value)
-    $('#cmd-iterations').text(event.target.value)
-  })
-  $('#threshold-slider').trigger('change')
-  $('#perplexity-slider').trigger('change')
-  $('#iterations-slider').trigger('change')
-  $('#cmd-copy').click((event) => {
-    event.preventDefault();
-
-    //$('#cmd-copy-buffer').val($('#cmd-string').text())
-    //$('#cmd-copy-buffer').select();
-    //#('#cmd-copy-buffer').setSelectionRange(0, 99999);
-    navigator.clipboard.writeText($('#cmd-string').text())
-  })
-
-  $('#visualize-submit').click((event) => {
-    event.preventDefault();
-
-    let threshold = $('#threshold-slider').val();
-    let perplexity = $('#perplexity-slider').val();
-    let exclude = $('#column-selector').val();
-    let sources = $('#source-selector').val();
-    let iterations = $('#iterations-slider').val();
-
-    // send configuration to server, request computation
-    $('#in-progress').removeClass('hidden')
-    $('#go-submit').addClass('hidden')
-    $('#visualize-submit').attr('disabled', true)
-    $.ajax('/compare', {
-      data: JSON.stringify({ threshold, perplexity, exclude, sources, iterations }),
-      contentType: 'application/json',
-      type: 'POST',
-      success: (response) => {
-        $('#output').attr('src', 'data:image/png;base64,' + response.overview)
-        $('#in-progress').addClass('hidden')
-        $('#go-submit').removeClass('hidden')
-        $('#visualize-submit').attr('disabled', false)
-
-        // Drop old listeners and add options
-        $('#output-selector').removeClass('hidden')
-        $('#output-selector').off('change')
-        $('#output-selector').empty()
-        $('#output-selector').on('change', (event) => {
-          let index = parseInt(event.target.value)
-          if (index === -1) {
-            // show overview
-            $('#output').attr('src', 'data:image/png;base64,' + response.overview)
-          } else if (index === -2) {
-            $('#output').attr('src', 'data:image/png;base64,' + response.clusters_overview)
-          } else {
-            $('#output').attr('src', 'data:image/png;base64,' + response.clusters[index])
-          }
-        })
-        $('#output-selector').append($('<option>').attr('value', '-1').text('Overview'))
-        $('#output-selector').append($('<option>').attr('value', '-2').text('All clusters'))
-        for (let i in response.clusters) {
-          $('#output-selector').append($('<option>').attr('value', i.toString()).text(`Cluster ${i}`))
-        }
-      },
-      error: (xhr, status, text) => {
-        showErrorModal(text)
-      }
-    })
-  })
-
-</script>
-
 {% endblock %}
