@@ -167,30 +167,27 @@ def compare_with_params():
     # generate compare files
     datasets = [pd.read_parquet(s) for s in sources]
     overview_path = os.path.join(tempdir, 'overview.png')
-    cluster_path = os.path.join(tempdir, 'cluster_%d.png')
-    n_clusters = compare.by_limiting_columns(
+    cluster_path = os.path.join(tempdir, 'cluster_%s.png')
+    n_clusters, cluster_path_set = compare.by_limiting_columns(
         datasets, excluded_columns, overview_path,
         iterations, perplexity, sources, threshold,
-        cluster_path=cluster_path, separate_overview=True)
+        cluster_path=cluster_path, separate_overview=True,
+        cluster_subplots=False, cluster_figsize=(10, 10))
 
     # read pngs into base64
-    overview_data = None
-    cluster_overview_data = None
-    cluster_data = []
-
+    response = {}
     with open(overview_path, 'rb') as f:
-        overview_data = f.read()
-    with open(cluster_path % -1, 'rb') as f:
-        cluster_overview_data = f.read()
+        response['overview'] = b64encode(f.read()).decode('utf-8')
+    with open(cluster_path % 'all', 'rb') as f:
+        response['clusters_all'] = b64encode(f.read()).decode('utf-8')
+    response['clusters'] = []
     for i in range(n_clusters):
-        with open(cluster_path % i, 'rb') as f:
-            cluster_data.append(f.read())
-    
-    return {
-        'overview': b64encode(overview_data).decode('utf-8'),
-        'clusters_overview': b64encode(cluster_overview_data).decode('utf-8'),
-        'clusters': [b64encode(c).decode('utf-8') for c in cluster_data],
-    }
+        cluster_data = {}
+        for (plot_type, path) in cluster_path_set[i].items():
+            with open(path, 'rb') as f:
+                cluster_data[plot_type] = b64encode(f.read()).decode('utf-8')
+        response['clusters'].append(cluster_data)
+    return response
 
 
 @app.route('/visualize', methods=['POST'])

@@ -21,6 +21,7 @@ def by_limiting_columns(
         figsize=(10, 10),
         cluster_figsize=(10, 30),
         cluster_path: str = 'cluster_%d.pdf',
+        cluster_subplots: bool = True,
         separate_overview: bool = False,
         highlight_clusters=[],
         highlight_path='highlight.pdf',
@@ -76,7 +77,7 @@ def by_limiting_columns(
                             legend=(1.04, 0.5), legendloc='center left',
                             legendtitle=legendtitle)
         visualize.visualize(tsne, labels_auto, clusters_auto,
-                            cluster_labels_auto, cluster_path % -1,
+                            cluster_labels_auto, cluster_path % 'all',
                             figsize=figsize,
                             legend=(1.04, 0.5), legendloc='center left')
     else:
@@ -89,10 +90,10 @@ def by_limiting_columns(
     if cluster_path is None:
         return
 
-    visualize.inspect_clusters(concatenated, pcad, tsne,
+    generated_cluster_plots = visualize.inspect_clusters(concatenated, pcad, tsne,
                                cluster_figsize,
                                cluster_path, clusters_auto,
-                               cluster_labels_auto, labels_auto)
+                               cluster_labels_auto, labels_auto, cluster_subplots)
 
     if len(highlight_clusters) != 0:
         visualize.highlight_clusters(
@@ -100,7 +101,7 @@ def by_limiting_columns(
             highlight_path, highlight_clusters,
             clusters_auto, highlight_labels, labels_auto)
 
-    return len(cluster_labels_auto)
+    return len(cluster_labels_auto), generated_cluster_plots
 
 
 def by_imputing_columns(superset: pd.DataFrame, subset: pd.DataFrame,

@@ -45,15 +45,20 @@
       });
       $data.plots.push({
         title: 'All clusters',
-        content: response.clusters_overview,
+        content: response.clusters_all,
       });
       for (var i = 0; i < response.clusters.length; i++) {
         $data.plots.push({
           title: `Cluster ${i}`,
-          content: response.clusters[i],
+          subplots: [
+            { title: 'Overview', content: response.clusters[i].cluster },
+            { title: 'Traits', content: response.clusters[i].traits },
+            { title: 'Traits (PCA)', content: response.clusters[i].traits_pca },
+          ]
         });
       }
       $data.selectedPlot = 0;
+      $data.selectedSubplot = 0;
     } catch (e) {
       showErrorModal(e);
     } finally {
@@ -64,9 +69,8 @@
     navigator.clipboard.writeText($('#cmd-string').text())
   }
 </script>
-<div
-  class="flex relative flex-grow overflow-x-hidden"
-  x-data="
+<div class="flex relative flex-grow overflow-x-hidden"
+     x-data="
   {
     sources: [],
     selectedSources: [],
@@ -78,9 +82,11 @@
     inflight: false,
     plots: [],
     selectedPlot: undefined,
+    selectedSubplot: undefined,
     clipboard: '',
   }
-" x-init="listSources($data)">
+"
+     x-init="listSources($data)">
   <div class="p-4 border-r border-gray-300 shrink-0 w-96">
     <form class="flex flex-col gap-4 h-full"
           @submit.prevent="updateComparisonView($data)">
@@ -199,18 +205,35 @@
   <div class="flex flex-grow flex-col min-h-full relative min-w-0">
     <div class="text-lg font-medium p-4 border-b border-gray-300 flex justify-between">
       <div>Output</div>
-      <select class="border border-gray-900 h-8 px-2 mx-2"
-              x-model="selectedPlot">
-        <template x-for="(plot, index) in plots">
-          <option x-text="plot.title"
-                  :value="index"></option>
-        </template>
-      </select>
+      <div>
+        <select class="border border-gray-900 h-8 px-2 mx-2"
+                x-show="plots[selectedPlot].subplots"
+                x-model="selectedSubplot">
+          <template x-for="(plot, index) in plots[selectedPlot].subplots">
+            <option x-text="plot.title"
+                    :value="index"></option>
+          </template>
+        </select>
+        <select class="border border-gray-900 h-8 px-2 mx-2"
+                x-model="selectedPlot">
+          <template x-for="(plot, index) in plots">
+            <option x-text="plot.title"
+                    :value="index"></option>
+          </template>
+        </select>
+      </div>
     </div>
     <div class="w-full overflow-y-auto flex-grow relative">
       <template x-if="plots[selectedPlot]">
         <img id="output"
+             x-show="plots[selectedPlot].content"
              :src="`data:image/png;base64,${plots[selectedPlot].content}`"
+             class="max-h-full">
+      </template>
+      <template x-if="plots[selectedPlot] && plots[selectedPlot].subplots[selectedSubplot]">
+        <img id="output-subplot"
+             x-show="plots[selectedPlot].subplots[selectedSubplot].content"
+             :src="`data:image/png;base64,${plots[selectedPlot].subplots[selectedSubplot].content}`"
              class="max-h-full">
       </template>
     </div>
@@ -236,25 +259,25 @@
       </div>
       <div id="cmd-string"
            class="font-mono whitespace-nowrap bg-gray-100 text-sm overflow-x-scroll p-2 flex gap-4 text-gray-900 underline-offset-4">
-          <span>trace_explorer compare</span>
-          <template x-for="(source, index) in selectedSources">
-            <span>
-              <span x-show="index === 0">--superset</span>
-              <span x-show="index > 0">--subset</span>
-              <span class="text-gray-600 underline decoration-dashed"
-                    x-text="source"></span>
-            </span>
-          </template>
-          <span x-text="`--threshold ${threshold}`"
-                class="text-gray-600 underline decoration-dashed"></span>
+        <span>trace_explorer compare</span>
+        <template x-for="(source, index) in selectedSources">
+          <span>
+            <span x-show="index === 0">--superset</span>
+            <span x-show="index > 0">--subset</span>
+            <span class="text-gray-600 underline decoration-dashed"
+                  x-text="source"></span>
           </span>
-          <span x-text="`--tsne_perplexity ${perplexity}`"
-                class="text-gray-600 underline decoration-dashed"></span>
-          <span x-text="`--tsne_n_iter ${iterations}`"
-                class="text-gray-600 underline decoration-dashed"></span>
-          <template x-for="column in excludedColumns">
-            <span x-text="`--exclude ${column}`"></span>
-          </template>
+        </template>
+        <span x-text="`--threshold ${threshold}`"
+              class="text-gray-600 underline decoration-dashed"></span>
+        </span>
+        <span x-text="`--tsne_perplexity ${perplexity}`"
+              class="text-gray-600 underline decoration-dashed"></span>
+        <span x-text="`--tsne_n_iter ${iterations}`"
+              class="text-gray-600 underline decoration-dashed"></span>
+        <template x-for="column in excludedColumns">
+          <span x-text="`--exclude ${column}`"></span>
+        </template>
       </div>
     </div>
   </div>

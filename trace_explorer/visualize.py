@@ -388,16 +388,22 @@ def inspect_clusters(
         original: pd.DataFrame, pcad: pd.DataFrame,
         embedding: pd.DataFrame, figsize: tuple[int],
         cluster_path: str, clusters: np.ndarray, cluster_names: list[str],
-        labels: np.ndarray):
+        labels: np.ndarray, as_subplots=True):
     # Generate N smaller subplots for each cluster, could be useful
+    plot_paths = {}
     for i in range(len(clusters)):
-        fig = plt.figure(figsize=figsize)
+        if as_subplots:
+            fig = plt.figure(figsize=figsize)
 
-        # Generate label graph
-        gs = fig.add_gridspec(3, 1)
-        ax1 = fig.add_subplot(gs[0, 0])
-        ax2 = fig.add_subplot(gs[1, 0])
-        ax3 = fig.add_subplot(gs[2, 0])
+            # Generate label graph
+            gs = fig.add_gridspec(3, 1)
+            ax1 = fig.add_subplot(gs[0, 0])
+            ax2 = fig.add_subplot(gs[1, 0])
+            ax3 = fig.add_subplot(gs[2, 0])
+        else:
+            fig1, ax1 = plt.subplots(figsize=figsize)
+            fig2, ax2 = plt.subplots(figsize=figsize)
+            fig3, ax3 = plt.subplots(figsize=figsize)
 
         labels_iter = (1 if labels[j] == clusters[i] else 0
                        for j in range(len(labels)))
@@ -405,13 +411,28 @@ def inspect_clusters(
         clusters_local = np.array([0, 1])
         description_local = np.array(['all', cluster_names[i]])
 
-        _plot_clusters(ax1, embedding, labels_local,
-                       clusters_local, description_local, show_legend=None)
+        lgd1 = _plot_clusters(ax1, embedding, labels_local,
+                       clusters_local, description_local)
         lgd2 = _visualize_traits_as_barchart(ax2, original,
                                              labels, clusters[i])
         lgd3 = _visualize_traits_grouped_by_pca(ax3, original, pcad,
                                                 labels, clusters[i])
 
-        plt.savefig(cluster_path % i, bbox_extra_artists=(lgd2, lgd3),
-                    bbox_inches='tight')
-        plt.close(fig)
+        if as_subplots:
+            plot_paths[i] = cluster_path % i
+            plt.savefig(plot_paths[i], bbox_extra_artists=(lgd1, lgd2, lgd3),
+                        bbox_inches='tight')
+            plt.close(fig)
+        else:
+            plot_paths[i] = {
+                'cluster': cluster_path % ('%d_scatterplot' % i),
+                'traits': cluster_path % ('%d_traits' % i),
+                'traits_pca': cluster_path % ('%d_traits_pca' % i),
+            }
+            fig1.savefig(plot_paths[i]['cluster'], bbox_inches='tight', bbox_extra_artists=(lgd1,))
+            plt.close(fig1)
+            fig2.savefig(plot_paths[i]['traits'], bbox_inches='tight', bbox_extra_artists=(lgd2,))
+            plt.close(fig2)
+            fig3.savefig(plot_paths[i]['traits_pca'], bbox_inches='tight', bbox_extra_artists=(lgd3,))
+            plt.close(fig3)
+    return plot_paths
