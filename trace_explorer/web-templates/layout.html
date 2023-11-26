@@ -57,18 +57,13 @@
     }
   </script>
   <div class="min-h-screen max-h-screen flex relative max-w-screen relative">
-    <div class="p-4 h-screen bg-black text-gray-100 w-40 shrink-0">
+    <div class="py-4 px-8 h-screen bg-black text-gray-100 w-60 shrink-0">
       <div class="text-2xl font-medium py-2">Trace<br>Explorer</div>
       <div class="py-2">
-        <ul class="flex flex-col gap-4 text-lg text-gray-400">
-          <li><a class="border-b-2 border-transparent hover:border-gray-100 {% if active == 'convert' %}text-gray-100{% endif %}"
-               href="/convert">Convert</a></li>
-          <li><a class="border-b-2 border-transparent hover:border-gray-100 {% if active == 'preprocess' %}text-gray-100{% endif %}"
-               href="/preprocess">Preprocess</a></li>
-          <li><a class="border-b-2 border-transparent hover:border-gray-100 {% if active == 'visualize' %}text-gray-100{% endif %}"
-               href="/visualize">Visualize</a></li>
-          <li><a class="border-b-2 border-transparent hover:border-gray-100 {% if active == 'compare' %}text-gray-100{% endif %}"
-               href="/compare">Compare</a></li>
+        <ul class="flex flex-col gap-4 text-lg">
+          {% for link in ['Convert', 'Preprocess', 'Visualize', 'Compare'] %}
+            {% include 'sidebar_link.html' %}
+          {% endfor %}
         </ul>
       </div>
     </div>

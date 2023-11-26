@@ -25,6 +25,7 @@
     }
   }
   async function updateComparisonView($data) {
+    $data.inflight = true;
     try {
       let response = await $.ajax('/compare', {
         data: JSON.stringify({
@@ -55,6 +56,8 @@
       $data.selectedPlot = 0;
     } catch (e) {
       showErrorModal(e);
+    } finally {
+      $data.inflight = false;
     }
   }
   async function copyToClipboard() {
@@ -166,13 +169,13 @@
                  viewBox="0 0 24 24"
                  stroke="currentColor"
                  stroke-width="2"
-                 x-show="inflight">
+                 x-show="!$data.inflight">
               <path stroke-linecap="round"
                     stroke-linejoin="round"
                     d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>
-            <svg x-show="inflight"
-                 class="animate-spin h-5 w-5 text-white hidden"
+            <svg x-show="$data.inflight"
+                 class="animate-spin h-5 w-5 text-white"
                  xmlns="http://www.w3.org/2000/svg"
                  fill="none"
                  viewBox="0 0 24 24">
