@@ -126,13 +126,14 @@ def upload_file():
     file.save(os.path.join(bucket_path, fid))
 
     # return hex id
-    return { 'id': fid }
+    return { 'id': fid, 'original_path': file.filename }
 
 @app.route('/convert', methods=['POST'])
 def convert_form():
     payload = request.get_json()
     bucket = payload['bucket']
     file_ids = payload['files']
+    file_original_paths = payload['original_file_paths']
     name = payload['name']
     transformer_id = payload['transformer']
 
@@ -143,7 +144,7 @@ def convert_form():
 
     print(transformer_path)
     transformer = convert.load_transformer('convert_plugin', transformer_path)
-    convert.to_parquet(transformer, file_paths, name + '.parquet')
+    convert.to_parquet(transformer, file_paths, name + '.parquet', with_path=True, original_file_paths=file_original_paths)
 
     # delete old bucket
     shutil.rmtree(bucket_path)

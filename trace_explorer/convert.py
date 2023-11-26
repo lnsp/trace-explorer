@@ -23,17 +23,19 @@ def find_dataset(path):
 
 
 def to_parquet(tf: transformer.Transformer, files: list[str], dest: str,
-               with_path: bool = False):
+               with_path: bool = False, original_file_paths: list[str] = None):
     """
     Uses the given transformer to convert the listed files
     into a parquet table.
     """
+    if original_file_paths is None:
+        original_file_paths = files
 
     rows = []
-    for fpath in files:
+    for (index, fpath) in enumerate(files):
         try:
             with open(fpath) as f:
-                row = tf.transform(f.read(), path=fpath if with_path else None)
+                row = tf.transform(f.read(), path=original_file_paths[index] if with_path else None)
                 rows.append(row)
         except Exception as e:
             print('skipped source %s, got %s' % (fpath, e))

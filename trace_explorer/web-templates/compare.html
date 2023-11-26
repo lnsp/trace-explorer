@@ -13,6 +13,10 @@
     }
   }
   async function listColumns($data) {
+    if ($data.selectedSources.length == 0) {
+      return
+    }
+    $data.inflight = true;
     try {
       let response = await $.ajax('/list_compare_columns', {
         data: JSON.stringify({ sources: $data.selectedSources }),
@@ -22,6 +26,8 @@
       $data.columns = response.columns;
     } catch (e) {
       showErrorModal(e);
+    } finally {
+      $data.inflight = false;
     }
   }
   async function updateComparisonView($data) {
@@ -90,10 +96,10 @@
   <div class="p-4 border-r border-gray-300 shrink-0 w-96">
     <form class="flex flex-col gap-4 h-full"
           @submit.prevent="updateComparisonView($data)">
-      <div class="flex gap-2 items-center text-lg font-medium">
+      <div class="flex gap-2 items-center text-md font-medium">
         <label for="source">Datasets</label>
       </div>
-      <div class="flex-grow flex flex-col">
+      <div class="flex-grow flex flex-col text-sm">
         <select name="sources"
                 multiple
                 class="border border-gray-900 h-12 px-2 w-full h-24 flex-grow"
@@ -104,20 +110,20 @@
           </template>
         </select>
       </div>
-      <div class="flex gap-2 items-center text-lg font-medium">
+      <div class="flex gap-2 items-center text-md font-medium">
         <label for="columns">Exclude features</label>
       </div>
       <div class="flex-grow flex flex-col">
         <select name="columns"
                 multiple
                 x-model="excludedColumns"
-                class="border border-gray-900 h-12 px-2 w-full h-24 flex-grow">
+                class="border border-gray-900 h-12 px-2 w-full h-24 flex-grow text-sm">
           <template x-for="column in columns">
             <option x-text="column"></option>
           </template>
         </select>
       </div>
-      <div class="flex gap-2 items-center text-lg font-medium">
+      <div class="flex gap-2 items-center text-md font-medium">
         <label for="params">Parameters</label>
       </div>
       <div class="flex items-center gap-2">
@@ -125,13 +131,13 @@
                class="w-24">Threshold</label>
         <input type="range"
                x-model="threshold"
-               class="flex-grow"
+               class="flex-grow text-sm"
                id="threshold-slider"
                min="1"
                max="50"
                value="20">
         <div id="threshold-value"
-             class="w-12 h-6 p-1 border border-black flex items-center"
+             class="w-12 h-6 p-1 border border-black flex items-center text-sm"
              x-text="threshold"></div>
       </div>
       <div class="flex items-center gap-2">
@@ -141,12 +147,12 @@
                name="perplexity"
                id="perplexity-slider"
                x-model="perplexity"
-               class="flex-grow"
+               class="flex-grow text-sm"
                min="10"
                max="50"
                value="30">
         <div id="perplexity-value"
-             class="w-12 h-6 p-1 border border-black flex items-center"
+             class="w-12 h-6 p-1 border border-black flex items-center text-sm"
              x-text="perplexity"></div>
       </div>
       <div class="flex items-center gap-2">
@@ -156,12 +162,12 @@
                name="iterations"
                id="iterations-slider"
                x-model="iterations"
-               class="flex-grow"
+               class="flex-grow text-sm"
                min="500"
                max="5000"
                value="2000">
         <div id="iterations-value"
-             class="w-12 h-6 p-1 border border-black flex items-center"
+             class="w-12 h-6 p-1 border border-black flex items-center text-sm"
              x-text="iterations"></div>
       </div>
       <div class="flex gap-2 items-center">
@@ -203,7 +209,7 @@
     </form>
   </div>
   <div class="flex flex-grow flex-col min-h-full relative min-w-0">
-    <div class="text-lg font-medium p-4 border-b border-gray-300 flex justify-between">
+    <div class="text-md font-medium p-4 border-b border-gray-300 flex justify-between">
       <div>Output</div>
       <div>
         <select class="border border-gray-900 h-8 px-2 mx-2"
@@ -238,7 +244,7 @@
       </template>
     </div>
     <div class="border-t border-gray-300 p-4">
-      <div class="text-lg font-medium mb-4 flex gap-4 items-center">
+      <div class="text-md font-medium mb-4 flex gap-4 items-center">
         <div>
           Command line
         </div>

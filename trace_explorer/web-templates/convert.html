@@ -6,7 +6,7 @@
 <div class="p-4 w-96">
   <form class="flex flex-col gap-2 h-full"
         id="convert-form">
-    <div class="flex gap-2 items-center text-lg font-medium">
+    <div class="flex gap-2 items-center text-md font-medium">
       <label for="transformer">Transformer</label>
     </div>
     <div class="">
@@ -30,7 +30,7 @@
              name="transformer"
              class="hidden">
     </div>
-    <div class="flex gap-2 items-center text-lg font-medium mt-4">
+    <div class="flex gap-2 items-center text-md font-medium mt-4">
       <label for="tracefiles">Source files</label>
     </div>
     <div class="flex flex-col">
@@ -54,7 +54,7 @@
              name="tracefiles"
              class="hidden">
     </div>
-    <div class="flex gap-2 items-center text-lg font-medium mt-4">
+    <div class="flex gap-2 items-center text-md font-medium mt-4">
       <label for="tracename">Name</label>
     </div>
     <div class="">
@@ -120,6 +120,7 @@
       // Store bucket id
       state.transformer = undefined
       state.files = []
+      state.original_file_paths = []
       state.bucket = data['bucket']
       state.upload_count = 0
       state.upload_target = 0
@@ -179,6 +180,7 @@
         type: 'POST',
         success: (data, status, xhr) => {
           state.files.push(data['id'])
+          state.original_file_paths.push(data['original_path'])
 
           // Increase upload count
           state.upload_count++
@@ -205,6 +207,7 @@
         name: $('#tracename').val(),
         bucket: state.bucket,
         files: state.files,
+        original_file_paths: state.original_file_paths,
         transformer: state.transformer,
       }),
       contentType: 'application/json',
