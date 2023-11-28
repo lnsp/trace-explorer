@@ -203,7 +203,7 @@ def visualize(df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray,
     for axis in [ax.get_xaxis(), ax.get_yaxis()]:
         axis.set_visible(False)
         axis.set_ticks([])
-    
+
     ax.set_xlim(df[0].min(), df[0].max())
     ax.set_ylim(df[1].min(), df[1].max())
 
@@ -215,7 +215,7 @@ def visualize(df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray,
         elif len(clusters) <= 20:
             color = plt.cm.tab20(label)
         else:
-            color = plt.cm.get_cmap('hsv')(label / len(clusters))
+            color = plt.cm.get_cmap('gist_ncar')(label  / len(clusters))
         if label not in skip_labels:
             ax.scatter(c[0], c[1], c=[color] * len(c), label=text)
         if label_graph:
@@ -238,7 +238,7 @@ def get_legend_colors(clusters):
         elif len(clusters) <= 20:
             color = plt.cm.tab20(label)
         else:
-            color = plt.cm.get_cmap('hsv')(label / len(clusters))
+            color = plt.cm.get_cmap('gist_ncar')(label[0] / len(clusters))
         colors.append(pltc.to_hex(color))
     return colors
 
@@ -262,7 +262,7 @@ def _plot_clusters(ax: plt.Axes,
         elif len(clusters) <= 20:
             color = plt.cm.tab20(label)
         else:
-            color = plt.cm.get_cmap('hsv')(label / len(clusters))
+            color = plt.cm.get_cmap('gist_ncar')(label / len(clusters))
         ax.scatter(c[0], c[1], c=[color] * len(c),
                    s=2, label=text)
         if label_graph:
