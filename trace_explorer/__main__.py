@@ -146,7 +146,7 @@ parser_compare.add_argument('--top_n', default=2, type=int,
                             help='only use the top N columns for labeling')
 parser_compare.add_argument('--tsne_n_iter', default=1000, type=int,
                             help='max number of iterations for TSNE')
-parser_compare.add_argument('--tsne_perplexity', default=30, type=int,
+parser_compare.add_argument('--tsne_perplexity', default=30, type=float,
                             help='TSNE perplexity setting')
 parser_compare.add_argument('--combine_figures', default=True, type=bool,
                             help='combine source/cluster overview figures')

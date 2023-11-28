@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as pltc
 import numpy as np
 import pandas as pd
+import struct
 from sklearn import preprocessing, decomposition, manifold, cluster, ensemble
 
 
@@ -66,10 +67,11 @@ def compute_tsne(df: pd.DataFrame, subset_idx: np.ndarray,
         raise 'warning: DataFrame subset may be too large'
 
     filtered_idx = df[df.index.isin(subset_idx)].index
+    perplexity_key = struct.pack('f', perplexity).hex()
 
     # Check local dir
     if hashsum:
-        obj = _restore_from_cache('%s.%d.%d.tsne.gz' % (hashsum, perplexity, n_iter))
+        obj = _restore_from_cache('%s.%s.%d.tsne.gz' % (hashsum, perplexity_key, n_iter))
         if obj is not None:
             return pd.DataFrame(data=obj, index=filtered_idx)
 
@@ -78,7 +80,9 @@ def compute_tsne(df: pd.DataFrame, subset_idx: np.ndarray,
                       init='pca').fit_transform(df[df.index.isin(subset_idx)])
     # Attempt to store in cache
     if hashsum:
-        _store_in_cache(X, '%s.%d.%d.tsne.gz' % (hashsum, perplexity, n_iter))
+        _store_in_cache(X, '%s.%s.%d.tsne.gz' % (hashsum,
+                                                 perplexity_key,
+                                                 n_iter))
 
     return pd.DataFrame(data=X, index=filtered_idx)
 
@@ -107,8 +111,9 @@ def compute_clusters(df: pd.DataFrame, subset_idx: np.ndarray,
     Find clusters using ward-linkage hierarchical clustering and
     returns a list of clusters and labels.
     """
+    threshold_key = struct.pack('f', threshold).hex()
     if hashsum:
-        obj = _restore_from_cache('%s.%d.clusters.gz' % (hashsum, threshold))
+        obj = _restore_from_cache('%s.%s.clusters.gz' % (hashsum, threshold_key))
         if obj is not None:
             clusters, labels = obj
             return clusters, labels
@@ -121,7 +126,7 @@ def compute_clusters(df: pd.DataFrame, subset_idx: np.ndarray,
     clusters = np.unique(labels)
 
     if hashsum:
-        _store_in_cache((clusters, labels), '%s.%d.clusters.gz' % (hashsum, threshold))
+        _store_in_cache((clusters, labels), '%s.%s.clusters.gz' % (hashsum, threshold_key))
 
     return clusters, labels
 

@@ -133,7 +133,8 @@
                x-model="threshold"
                class="flex-grow text-sm"
                id="threshold-slider"
-               min="1"
+               step="0.01"
+               min="0.01"
                max="50"
                value="20">
         <div id="threshold-value"
@@ -148,7 +149,8 @@
                id="perplexity-slider"
                x-model="perplexity"
                class="flex-grow text-sm"
-               min="10"
+               step="0.01"
+               min="0.01"
                max="100"
                value="30">
         <div id="perplexity-value"
