@@ -3,5 +3,25 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-<div class="text-xl p-8 bg-black text-white h-screen w-full max-w-full flex border-l border-gray-600">A toolset to explain and visualize database workload traces and benchmark datapoints.</div>
+<div x-data="{ open: false }" class="p-8 bg-white text-black h-screen w-full max-w-full flex border-l border-gray-600">
+    <div class="">
+        <p class="text-xl">
+        A toolset to
+        explain and visualize database workload traces</br>and benchmark datapoints.
+        </p>
+        <button x-on:click="open = true" x-show="!open" class="flex items-center gap-2 mt-4 bg-black text-white shadow-lg hover:bg-gray-800 py-2 px-4">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 -ml-1">
+                <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm14.024-.983a1.125 1.125 0 010 1.966l-5.603 3.113A1.125 1.125 0 019 15.113V8.887c0-.857.921-1.4 1.671-.983l5.603 3.113z" clip-rule="evenodd" />
+              </svg>
+
+              <span>Introduction video</span>
+        </button></div>
+    <div x-show="open" x-on:click="open = false" class="fixed top-0 left-0 flex justify-center items-center w-full h-full backdrop-blur backdrop-brightness-75">
+        <div class="w-3/4 p-4 bg-white rounded">
+            <iframe src="https://drive.google.com/file/d/12R8pv4rtBXNr3Vf8AldnaU4J9WbfTfOc/preview"
+                    class="aspect-video w-full"
+                    allow="autoplay"></iframe>
+        </div>
+    </div>
+</div>
 {% endblock %}
