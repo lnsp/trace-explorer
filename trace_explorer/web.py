@@ -84,7 +84,7 @@ def list_sources():
 @app.route('/list_source_columns', methods=['POST'])
 def list_source_columns():
     # list all columns of a source
-    source = request.form['source']
+    source = request.get_json()['source']
     # fetch source columns
     return {'columns': sorted(list(pd.read_parquet(source).columns))}
 
@@ -229,7 +229,22 @@ def visualize_with_params():
     with open(tmppath, 'rb') as f:
         png_binary_data = f.read()
     png_data = b64encode(png_binary_data).decode('utf-8')
-    return {'data': png_data, 'legend': {'colors': lgd_colors, 'labels': cluster_labels, 'indices': clusters.tolist()}}
+
+    response = {'data': png_data, 'legend': {'colors': lgd_colors, 'labels': cluster_labels, 'indices': clusters.tolist()}, 'clusters': []}
+    if not payload['skipInspectClusters']:
+        # do cluster inspection
+        tmppath = tempfile.mkdtemp('extra_plots') + "/" + "%s.png"
+        cluster_paths = visualize.inspect_clusters(df, df_pcad, df_tsne,
+                                   (10, 10),
+                                   tmppath, clusters, cluster_labels,
+                                   labels, as_subplots=False)
+        for i in range(len(cluster_labels)):
+            cluster_data = {}
+            for (plot_type, path) in cluster_paths[i].items():
+                with open(path, 'rb') as f:
+                    cluster_data[plot_type] = b64encode(f.read()).decode('utf-8')
+            response['clusters'].append(cluster_data)
+    return response
 
 
 def open_browser(url):

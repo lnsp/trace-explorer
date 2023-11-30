@@ -3,288 +3,351 @@
 {% block title %}Visualize{% endblock %}
 
 {% block content %}
-<div class="p-4 border-r border-gray-300 shrink-0 w-80">
-  <form class="flex flex-col gap-2 h-full">
-    <div class="flex gap-2 items-center text-md font-medium">
-      <label for="source">Dataset</label>
+<script>
+  async function listSources($data) {
+    try {
+      let response = await $.post('/list_sources');
+      $data.sources = response.sources;
+      if ($data.sources.length > 0) {
+        $data.selectedSource = $data.sources[0];
+      }
+    } catch (e) {
+      showErrorModal(e);
+    }
+
+    listColumns($data)
+  }
+  async function listColumns($data) {
+    if ($data.selectedSource === undefined) {
+      return;
+    }
+    $data.inflight = true;
+    try {
+      let response = await $.ajax('/list_source_columns', {
+        data: JSON.stringify({ source: $data.selectedSource }),
+        contentType: 'application/json',
+        type: 'POST'
+      });
+      $data.columns = response.columns;
+    } catch (e) {
+      showErrorModal(e);
+    } finally {
+      $data.inflight = false;
+    }
+  }
+  async function toggleCluster($data, item) {
+    let index = $data.excludedClusters.indexOf(item);
+    if (index === -1) {
+      $data.excludedClusters.push(item);
+    } else {
+      $data.excludedClusters.splice(index, 1);
+    }
+
+    updateView($data);
+  }
+  async function updateView($data) {
+    $data.inflight = true;
+    try {
+      let thisView = JSON.stringify({
+        threshold: $data.threshold,
+        perplexity: $data.perplexity,
+        exclude: $data.excludedColumns,
+        source: $data.selectedSource,
+        iterations: $data.iterations,
+      });
+      let isFreshView = $data.lastView !== thisView;
+      let response = await $.ajax('/visualize', {
+        data: JSON.stringify({
+          threshold: $data.threshold,
+          perplexity: $data.perplexity,
+          exclude: $data.excludedColumns,
+          source: $data.selectedSource,
+          iterations: $data.iterations,
+          hidden: $data.excludedClusters,
+          skipInspectClusters: !isFreshView,
+        }),
+        contentType: 'application/json',
+        type: 'POST',
+      });
+
+      if (isFreshView) {
+        $data.plots = [{
+          title: 'All clusters',
+          content: response.data,
+        }];
+        for (var i = 0; i < response.clusters.length; i++) {
+          $data.plots.push({
+            title: `Cluster ${i}`,
+            subplots: [
+              { title: 'Overview', content: response.clusters[i].cluster },
+              { title: 'Traits', content: response.clusters[i].traits },
+              { title: 'Traits (PCA)', content: response.clusters[i].traits_pca },
+            ]
+          });
+        }
+        $data.excludedClusters = [];
+        $data.clusters = [];
+        response.legend.labels.forEach((_, i) => {
+          $data.clusters.push({
+            label: response.legend.labels[i],
+            color: response.legend.colors[i],
+            index: response.legend.indices[i]
+          });
+        });
+        $data.selectedPlot = 0;
+        $data.selectedSubplot = 0;
+      } else {
+        $data.plots[0] = {
+          title: 'All clusters',
+          content: response.data,
+        };
+      }
+      $data.lastView = thisView;
+    } catch (e) {
+      showErrorModal(e);
+    } finally {
+      $data.inflight = false;
+    }
+  }
+  async function copyToClipboard() {
+    navigator.clipboard.writeText($('#cmd-string').text())
+  }
+</script>
+<div class="flex relative flex-grow overflow-x-hidden"
+     x-data="
+  {
+    sources: [],
+    selectedSource: undefined,
+    columns: [],
+    excludedColumns: [],
+    clusters: [],
+    excludedClusters: [],
+    threshold: 20,
+    perplexity: 30,
+    iterations: 2000,
+    inflight: false,
+    plots: [],
+    selectedPlot: undefined,
+    selectedSubplot: undefined,
+    clipboard: '',
+    lastParams: {},
+  }
+"
+     x-init="listSources($data)">
+  <div class="p-4 border-r border-gray-300 shrink-0 w-80">
+    <form class="flex flex-col gap-4 h-full">
+      <div class="flex gap-2 items-center text-md font-medium">
+        <label for="source">Dataset</label>
+      </div>
+      <div class="">
+        <select name="source"
+                id="source-selector"
+                x-model="selectedSource"
+                @change="listColumns($data)"
+                class="border border-gray-900 text-sm h-8 px-2 w-full">
+          <template x-for="source in sources">
+            <option x-text="source"></option>
+          </template>
+        </select>
+      </div>
+      <div class="flex gap-2 items-center text-md font-medium">
+        <label for="columns">Exclude features</label>
+      </div>
+      <div class="flex-grow flex flex-col">
+        <select name="columns"
+                id="column-selector"
+                multiple
+                x-model="excludedColumns"
+                class="border border-gray-900 text-sm h-12 px-2 w-full h-24 flex-grow">
+          <template x-for="column in columns">
+            <option x-text="column"></option>
+          </template>
+        </select>
+      </div>
+      <div class="flex gap-2 items-center text-md font-medium">
+        <label for="params">Parameters</label>
+      </div>
+      <div class="flex items-center gap-2">
+        <label for="threshold-slider"
+               class="w-24">Threshold</label>
+        <input type="range"
+               x-model="threshold"
+               class="flex-grow text-sm"
+               id="threshold-slider"
+               step="0.01"
+               min="0.01"
+               max="50"
+               value="20">
+        <div id="threshold-value"
+             class="w-12 h-6 p-1 border border-black flex items-center text-sm"
+             x-text="threshold"></div>
+      </div>
+      <div class="flex items-center gap-2">
+        <label for="perplexity-slider"
+               class="w-24">Perplexity</label>
+        <input type="range"
+               name="perplexity"
+               id="perplexity-slider"
+               x-model="perplexity"
+               class="flex-grow text-sm"
+               step="0.01"
+               min="0.01"
+               max="100"
+               value="30">
+        <div id="perplexity-value"
+             class="w-12 h-6 p-1 border border-black flex items-center text-sm"
+             x-text="perplexity"></div>
+      </div>
+      <div class="flex items-center gap-2">
+        <label for="iterations-slider"
+               class="w-24">Iterations</label>
+        <input type="range"
+               name="iterations"
+               id="iterations-slider"
+               x-model="iterations"
+               class="flex-grow text-sm"
+               min="500"
+               max="5000"
+               value="2000">
+        <div id="iterations-value"
+             class="w-12 h-6 p-1 border border-black flex items-center text-sm"
+             x-text="iterations"></div>
+      </div>
+      <div class="flex gap-2 items-center">
+        <button role="submit"
+                id="visualize-submit"
+                @click.prevent="updateView($data)"
+                class="bg-black flex items-center font-medium shadow-lg hover:shadow-xl hover:bg-gray-800 py-2 px-4 text-white">
+          <div class="h-5 w-5 -ml-1 mr-3">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 id="go-submit"
+                 x-show="!inflight"
+                 class="h-5 w-5 text-white"
+                 fill="none"
+                 viewBox="0 0 24 24"
+                 stroke="currentColor"
+                 stroke-width="2">
+              <path stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+            <svg id="in-progress"
+                 x-show="inflight"
+                 class="animate-spin h-5 w-5 text-white"
+                 xmlns="http://www.w3.org/2000/svg"
+                 fill="none"
+                 viewBox="0 0 24 24">
+              <circle class="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      stroke-width="4"></circle>
+              <path class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+              </path>
+            </svg>
+          </div>
+          Visualize
+        </button>
+      </div>
+    </form>
+  </div>
+  <div class="flex flex-grow flex-col min-h-full relative overflow-x-auto"
+       x-show="plots.length > 0">
+    <div class="text-md font-medium p-4 border-b border-gray-300 flex items-center justify-between">
+      Output
+      <div>
+        <select class="border border-gray-900 h-8 px-2 mx-2"
+                x-show="plots[selectedPlot].subplots"
+                x-model="selectedSubplot">
+          <template x-for="(plot, index) in plots[selectedPlot].subplots">
+            <option x-text="plot.title"
+                    :value="index"></option>
+          </template>
+        </select>
+        <select class="border border-gray-900 h-8 px-2 mx-2"
+                x-model="selectedPlot">
+          <template x-for="(plot, index) in plots">
+            <option x-text="plot.title"
+                    :value="index"></option>
+          </template>
+        </select>
+      </div>
     </div>
-    <div class="">
-      <select name="source"
-              id="source-selector"
-              class="border border-gray-900 text-sm h-8 px-2 w-full">
-      </select>
+    <div class="w-full overflow-y-auto flex-grow relative">
+      <template x-if="plots[selectedPlot]">
+        <img id="output"
+             x-show="plots[selectedPlot].content"
+             :src="`data:image/png;base64,${plots[selectedPlot].content}`"
+             class="max-h-full">
+      </template>
+      <template x-if="plots[selectedPlot] && plots[selectedPlot].subplots[selectedSubplot]">
+        <img id="output-subplot"
+             x-show="plots[selectedPlot].subplots[selectedSubplot].content"
+             :src="`data:image/png;base64,${plots[selectedPlot].subplots[selectedSubplot].content}`"
+             class="max-h-full">
+      </template>
     </div>
-    <div class="flex gap-2 items-center text-md font-medium">
-      <label for="columns">Exclude features</label>
+    <div id="visualize-legend"
+        x-show="selectedPlot == 0"
+         class="border-t border-gray-300 max-w-full p-2">
+      <h3 class="text-md font-medium p-2">Legend</h3>
+      <ul id="output-legend"
+          class="px-2 text-xs grid-cols-2 grid">
+        <template x-for="cluster in clusters">
+          <li class="flex items-center border-t border-gray-300"
+              :class="excludedClusters.includes(cluster.index) && 'opacity-50, line-through'"
+              x-on:click="toggleCluster($data, cluster.index)">
+            <span class="inline-block w-4 h-4 mr-2' "
+                  :style="'background-color: ' + cluster.color"></span>
+            <span x-text="cluster.label"></span>
+          </li>
+        </template>
+      </ul>
     </div>
-    <div class="flex-grow flex flex-col">
-      <select name="columns"
-              id="column-selector"
-              multiple
-              class="border border-gray-900 text-sm h-12 px-2 w-full h-24 flex-grow">
-      </select>
-    </div>
-    <div class="flex gap-2 items-center text-md font-medium">
-      <label for="params">Parameters</label>
-    </div>
-    <div class="flex items-center gap-2">
-      <label for="threshold"
-             class="w-24 text-sm">Threshold</label>
-      <input type="range"
-             name="threshold"
-             id="threshold-slider"
-             class="flex-grow text-sm"
-             step="0.01"
-             min="0.01"
-             max="50"
-             value="20">
-      <div id="threshold-value"
-           class="w-12 text-sm h-6 p-1 border border-black flex items-center"></div>
-    </div>
-    <div class="flex items-center gap-2">
-      <label for="perplexity"
-             class="w-24 text-sm">Perplexity</label>
-      <input type="range"
-             name="perplexity"
-             id="perplexity-slider"
-             class="flex-grow text-sm"
-             step="0.01"
-             min="0.01"
-             max="100"
-             value="30">
-      <div id="perplexity-value"
-           class="w-12 text-sm h-6 p-1 border border-black flex items-center"></div>
-    </div>
-    <div class="flex items-center gap-2">
-      <label for="iterations"
-             class="w-24 text-sm">Iterations</label>
-      <input type="range"
-             name="iterations"
-             id="iterations-slider"
-             class="flex-grow text-sm"
-             min="500"
-             max="5000"
-             value="2000">
-      <div id="iterations-value"
-           class="w-12 text-sm h-6 p-1 border border-black flex items-center"></div>
-    </div>
-    <div class="flex gap-2 items-center">
-      <button role="submit"
-              id="visualize-submit"
-              class="bg-black flex items-center font-medium shadow-lg hover:shadow-xl hover:bg-gray-800 py-2 px-4 text-white">
-        <div class="h-5 w-5 -ml-1 mr-3">
+    <div class="border-t border-gray-300 p-4 max-w-full">
+      <div class="text-md font-medium mb-4 flex gap-4 items-center">
+        <div>
+          Command line
+        </div>
+
+        <button class="text-gray-500 hover:text-gray-800 transition"
+                id="cmd-copy">
           <svg xmlns="http://www.w3.org/2000/svg"
-               id="go-submit"
-               class="h-5 w-5 text-white"
+               class="h-5 w-5"
                fill="none"
                viewBox="0 0 24 24"
                stroke="currentColor"
                stroke-width="2">
             <path stroke-linecap="round"
                   stroke-linejoin="round"
-                  d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
           </svg>
-          <svg id="in-progress"
-               class="animate-spin h-5 w-5 text-white hidden"
-               xmlns="http://www.w3.org/2000/svg"
-               fill="none"
-               viewBox="0 0 24 24">
-            <circle class="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    stroke-width="4"></circle>
-            <path class="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-            </path>
-          </svg>
-        </div>
-        Visualize
-      </button>
-    </div>
-  </form>
-</div>
-<div class="flex flex-grow flex-col min-h-full relative overflow-x-auto">
-  <div class="text-md font-medium p-4 border-b border-gray-300">
-    Output
-  </div>
-  <div class="w-full overflow-y-auto flex-grow relative flex">
-    <img id="output"
-         class="max-h-full">
-  </div>
-  <div id="visualize-legend" class="hidden border-t border-gray-300">
-    <h3 class="text-md font-medium p-4">Legend</h3>
-    <ul id="output-legend" class="px-2 text-xs grid-cols-2 grid">
-    </ul>
-  </div>
-  <div class="border-t border-gray-300 p-4 max-w-full">
-    <div class="text-md font-medium mb-4 flex gap-4 items-center">
-      <div>
-        Command line
+        </button>
+        <input type="text"
+               class="hidden"
+               id="cmd-copy-buffer">
       </div>
-
-      <button class="text-gray-500 hover:text-gray-800 transition"
-              id="cmd-copy">
-        <svg xmlns="http://www.w3.org/2000/svg"
-             class="h-5 w-5"
-             fill="none"
-             viewBox="0 0 24 24"
-             stroke="currentColor"
-             stroke-width="2">
-          <path stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-        </svg>
-      </button>
-      <input type="text"
-             class="hidden"
-             id="cmd-copy-buffer">
-    </div>
-    <div class="monospace bg-gray-100 text-xs overflow-x-auto p-2 flex gap-4 text-gray-900 underline-offset-4">
-      $
-      <pre
-           id="cmd-string">trace_explorer visualize --source <span id="cmd-source" class="text-gray-600 underline decoration-dashed"></span> --threshold <span id="cmd-threshold" class="text-gray-600 underline decoration-dashed"></span> --perplexity <span id="cmd-perplexity" class="text-gray-600 underline decoration-dashed"></span> --n_iter <span id="cmd-iterations" class="text-gray-600 underline decoration-dashed"></span><span id="cmd-exclude" class=""></span></pre>
+      <div id="cmd-string"
+           class="font-mono whitespace-nowrap bg-gray-100 text-xs overflow-x-scroll p-2 flex gap-4 text-gray-900 underline-offset-4">
+        <span>trace_explorer visualize</span>
+        <span x-text="`--source ${selectedSource}`"
+              class="text-gray-600 underline decoration-dashed"></span>
+        </span>
+        <span x-text="`--threshold ${threshold}`"
+              class="text-gray-600 underline decoration-dashed"></span>
+        </span>
+        <span x-text="`--tsne_perplexity ${perplexity}`"
+              class="text-gray-600 underline decoration-dashed"></span>
+        <span x-text="`--tsne_n_iter ${iterations}`"
+              class="text-gray-600 underline decoration-dashed"></span>
+        <template x-for="column in excludedColumns">
+          <span x-text="`--exclude ${column}`"></span>
+        </template>
+      </div>
     </div>
   </div>
 </div>
-<script>
-  let legendLabelStates = {};
-  let ignoreLegendLabelStates = true;
-  function ignoreLegend() {
-    ignoreLegendLabelStates = true;
-    $('#visualize-legend').addClass('hidden')
-  }
-
-
-  $.post('/list_sources', {}, (data) => {
-    console.log(data);
-
-    $('#source-selector').empty();
-    for (let s of data.sources) {
-      $('#source-selector').append($("<option>").val(s).text(s))
-    }
-
-    $('#source-selector').trigger('change');
-  })
-
-  $('#source-selector').change((event) => {
-    if (!event.target.value) return;
-
-    ignoreLegend()
-
-    $.post('/list_source_columns', { source: event.target.value }, (data) => {
-      $('#column-selector').empty();
-      for (let s of data.columns) {
-        $('#column-selector').append($("<option>").val(s).text(s))
-      }
-    })
-
-    $('#cmd-source').text(event.target.value)
-  })
-  $('#column-selector').change((event) => {
-    ignoreLegend()
-
-    let selected = [...event.target.options]
-      .filter(option => option.selected)
-      .map(option => option.value);
-
-    // Build list of elements
-    $('#cmd-exclude').empty();
-    for (let s of selected) {
-      let col = $('<span>').addClass('text-gray-600 underline decoration-dashed').text(s);
-      let parent = $('<span>').text(' --exclude ').append(col);
-      $('#cmd-exclude').append(parent);
-    }
-  })
-
-  function installSliderHandler(prop) {
-    $(`#${prop}-slider`).on('input change', (event) => {
-      $(`#${prop}-value`).text(event.target.value)
-      $(`#cmd-${prop}`).text(event.target.value)
-      ignoreLegend()
-    })
-    $(`#${prop}-slider`).trigger('change')
-  }
-  installSliderHandler('threshold')
-  installSliderHandler('perplexity')
-  installSliderHandler('iterations')
-  $('#cmd-copy').click((event) => {
-    event.preventDefault();
-
-    //$('#cmd-copy-buffer').val($('#cmd-string').text())
-    //$('#cmd-copy-buffer').select();
-    //#('#cmd-copy-buffer').setSelectionRange(0, 99999);
-    navigator.clipboard.writeText($('#cmd-string').text())
-  })
-
-  $('#visualize-submit').click((event) => {
-    event.preventDefault();
-
-    let threshold = $('#threshold-slider').val();
-    let perplexity = $('#perplexity-slider').val();
-    let exclude = $('#column-selector').val();
-    let source = $('#source-selector').val();
-    let iterations = $('#iterations-slider').val();
-
-    let hiddenClusters = ignoreLegendLabelStates ? [] : Object.keys(legendLabelStates);
-
-    // send configuration to server, request computation
-    $('#in-progress').removeClass('hidden')
-    $('#go-submit').addClass('hidden')
-    $('#visualize-submit').attr('disabled', true)
-    $.ajax('/visualize', {
-      data: JSON.stringify({
-        threshold: threshold,
-        perplexity: perplexity,
-        exclude: exclude,
-        source: source,
-        iterations: iterations,
-        hidden: hiddenClusters,
-      }),
-      contentType: 'application/json',
-      type: 'POST',
-      success: (response) => {
-        $('#output').attr('src', 'data:image/png;base64,' + response.data)
-        $('#in-progress').addClass('hidden')
-        $('#go-submit').removeClass('hidden')
-        $('#visualize-submit').attr('disabled', false)
-
-        // generate the fresh legend
-        $('#output-legend').empty();
-        legendLabelStates = ignoreLegendLabelStates ? {} : legendLabelStates;
-        for (let i = 0; i < response.legend.colors.length; i++) {
-          let legendCluster = response.legend.indices[i];
-          let legendItem = $('<li>').addClass('flex items-center border-t border-gray-300').attr('x-attr-index', response.legend.indices[i])
-          if (legendCluster in legendLabelStates) {
-            legendItem.addClass('opacity-50')
-            legendItem.addClass('line-through')
-          }
-          legendItem.append($('<span>').addClass('inline-block w-4 h-4 mr-2').css('background-color', response.legend.colors[i]))
-          legendItem.append($('<span>').text(response.legend.labels[i]))
-          legendItem.click(() => {
-            if (legendCluster in legendLabelStates) {
-              delete legendLabelStates[legendCluster]
-              legendItem.removeClass('opacity-50')
-              legendItem.removeClass('line-through')
-            } else {
-              legendLabelStates[legendCluster] = null
-              legendItem.addClass('opacity-50')
-              legendItem.addClass('line-through')
-            }
-            $('#visualize-submit').trigger('click');
-          })
-          $('#output-legend').append(legendItem)
-        }
-        $('#visualize-legend').removeClass('hidden')
-        ignoreLegendLabelStates = false;
-      },
-      error: (xhr, status, text) => {
-        showErrorModal(text)
-      }
-    })
-  })
-
-</script>
 {% endblock %}
