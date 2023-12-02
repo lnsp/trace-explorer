@@ -27,7 +27,6 @@ def by_limiting_columns(
         highlight_path='highlight.pdf',
         highlight_labels=[],
         cachekey=None,
-        legendtitle=None,
         show_legend: bool = True,
         skip_inspect_clusters: bool = False,
         skip_overview_clusters: set[int] = (),
@@ -86,12 +85,14 @@ def by_limiting_columns(
         "indices": clusters_auto.tolist(),
     }
     if separate_overview:
+        kwargs = {'legend': None} if not show_legend else {'legend': (1.04, 0.5), 'legendloc': 'center left'}
+
         visualize.visualize(tsne, labels_source, clusters_source,
                             cluster_labels_source, path, figsize=figsize,
-                            legend=None, skip_labels=skip_overview_clusters)
+                            skip_labels=skip_overview_clusters, **kwargs)
         visualize.visualize(tsne, labels_auto, clusters_auto,
                             cluster_labels_auto, cluster_path % 'all',
-                            figsize=figsize, legend=None, skip_labels=skip_clustersall_clusters)
+                            figsize=figsize, skip_labels=skip_clustersall_clusters, **kwargs)
     else:
         visualize.compare_datasets(
             tsne, path,
@@ -145,6 +146,7 @@ def by_imputing_columns(superset: pd.DataFrame, subset: pd.DataFrame,
     concatenated = pd.concat([superset, imputed])
     clusters_source = np.array([0, 1])
     labels_source = np.array([0] * len(superset) + [1] * len(subset))
+
 
     pcad = visualize.compute_pca(concatenated)
     tsne = visualize.compute_tsne(pcad, pcad.index.to_numpy())

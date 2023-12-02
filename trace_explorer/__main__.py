@@ -150,10 +150,8 @@ parser_compare.add_argument('--tsne_perplexity', default=30, type=float,
                             help='TSNE perplexity setting')
 parser_compare.add_argument('--combine_figures', default=True, type=bool,
                             help='combine source/cluster overview figures')
-parser_compare.add_argument('--source_labels', nargs='+', default=[],
+parser_compare.add_argument('--source_labels', nargs='+', default=None,
                             help='source labels')
-parser_compare.add_argument('--source_title', default=None,
-                            help='source title')
 parser_compare.add_argument('--cachekey', default=None,
                             help='set a custom cachekey')
 parser_compare.add_argument('--figsize', default='10x10',
@@ -318,8 +316,7 @@ def main():
                 highlight_clusters=set(int(x) for x in args.highlight),
                 highlight_path=args.highlight_output,
                 highlight_labels=args.highlight_labels,
-                cachekey=args.cachekey,
-                legendtitle=args.source_title)
+                cachekey=args.cachekey)
         elif args.method == 'impute':
             compare.by_imputing_columns(superset, subsets[0],
                                         args.exclude_superset,

@@ -212,20 +212,20 @@ def visualize(df: pd.DataFrame, df_labels: np.ndarray, clusters: np.ndarray,
     ax.set_xlim(df[0].min(), df[0].max())
     ax.set_ylim(df[1].min(), df[1].max())
 
-    for label, text in zip(clusters, cluster_labels):
-        c = df[df_labels == label]
+    for cluster_id, text in zip(clusters, cluster_labels):
+        c = df[df_labels == cluster_id]
         # choose color scheme based on number of labels
         if len(clusters) <= 10:
-            color = plt.cm.tab10(label)
+            color = plt.cm.tab10(cluster_id)
         elif len(clusters) <= 20:
-            color = plt.cm.tab20(label)
+            color = plt.cm.tab20(cluster_id)
         else:
-            color = plt.cm.get_cmap('gist_ncar')(label  / len(clusters))
-        if label not in skip_labels:
+            color = plt.cm.get_cmap('gist_ncar')(cluster_id  / len(clusters))
+        if cluster_id not in skip_labels:
             ax.scatter(c[0], c[1], c=[color] * len(c), label=text)
         if label_graph:
             m = c.median()
-            ax.text(m[0], m[1], str(label), weight='bold')
+            ax.text(m[0], m[1], str(cluster_id), weight='bold')
     extra_artists=tuple()
     if legend:
         lgd = plt.legend(loc=legendloc, bbox_to_anchor=legend,
