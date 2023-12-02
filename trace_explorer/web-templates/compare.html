@@ -30,9 +30,34 @@
       $data.inflight = false;
     }
   }
+  function buildClusterSet(legend) {
+    clusters = []
+    legend.labels.forEach((_, i) => {
+      clusters.push({
+        label: legend.labels[i],
+        color: legend.colors[i],
+        index: legend.indices[i],
+        excluded: false,
+      });
+    });
+    return clusters
+  }
   async function updateComparisonView($data) {
     $data.inflight = true;
     try {
+      console.log($data.legends);
+      let hiddenInOverview = $data.legends.length > 0 ?
+        $data.legends[0].filter(item => item.excluded).map(item => item.index) : [];
+      let hiddenInClustersAll = $data.legends.length > 0 ?
+        $data.legends[1].filter(item => item.excluded).map(item => item.index) : [];
+      let thisView = JSON.stringify({
+        threshold: $data.threshold,
+        perplexity: $data.perplexity,
+        exclude: $data.excludedColumns,
+        sources: $data.selectedSources,
+        iterations: $data.iterations,
+      });
+      let skipInspectClusters = $data.oldView === thisView;
       let response = await $.ajax('/compare', {
         data: JSON.stringify({
           threshold: $data.threshold,
@@ -40,31 +65,52 @@
           exclude: $data.excludedColumns,
           sources: $data.selectedSources,
           iterations: $data.iterations,
+          skipInspectClusters: skipInspectClusters,
+          hidden: {
+            overview: hiddenInOverview,
+            clusters_all: hiddenInClustersAll,
+          },
         }),
         contentType: 'application/json',
         type: 'POST',
       });
-      $data.plots = [];
-      $data.plots.push({
-        title: 'Overview',
-        content: response.overview
-      });
-      $data.plots.push({
-        title: 'All clusters',
-        content: response.clusters_all,
-      });
-      for (var i = 0; i < response.clusters.length; i++) {
+      if (!skipInspectClusters) {
+        $data.plots = [];
         $data.plots.push({
-          title: `Cluster ${i}`,
-          subplots: [
-            { title: 'Overview', content: response.clusters[i].cluster },
-            { title: 'Traits', content: response.clusters[i].traits },
-            { title: 'Traits (PCA)', content: response.clusters[i].traits_pca },
-          ]
+          title: 'Overview',
+          content: response.overview
         });
+        $data.plots.push({
+          title: 'All clusters',
+          content: response.clusters_all,
+        });
+        for (var i = 0; i < response.clusters.length; i++) {
+          $data.plots.push({
+            title: `Cluster ${i}`,
+            subplots: [
+              { title: 'Overview', content: response.clusters[i].cluster },
+              { title: 'Traits', content: response.clusters[i].traits },
+              { title: 'Traits (PCA)', content: response.clusters[i].traits_pca },
+            ]
+          });
+        }
+        $data.legends = [
+          buildClusterSet(response.legends.overview),
+          buildClusterSet(response.legends.clusters_all),
+        ];
+        $data.selectedPlot = 0;
+        $data.selectedSubplot = 0;
+        $data.oldView = thisView;
+      } else {
+        $data.plots[0] = {
+          title: 'Overview',
+          content: response.overview
+        };
+        $data.plots[1] = {
+          title: 'All clusters',
+          content: response.clusters_all,
+        };
       }
-      $data.selectedPlot = 0;
-      $data.selectedSubplot = 0;
     } catch (e) {
       showErrorModal(e);
     } finally {
@@ -82,6 +128,8 @@
     selectedSources: [],
     columns: [],
     excludedColumns: [],
+    legends: [],
+    oldView: undefined,
     threshold: 20,
     perplexity: 30,
     iterations: 2000,
@@ -244,6 +292,22 @@
              :src="`data:image/png;base64,${plots[selectedPlot].subplots[selectedSubplot].content}`"
              class="max-h-full">
       </template>
+    </div>
+    <div x-show="selectedPlot == 0 || selectedPlot == 1"
+         class="border-t border-gray-300 max-w-full p-2">
+      <h3 class="text-md font-medium p-2">Legend</h3>
+      <ul id="output-legend"
+          class="px-2 text-xs grid-cols-2 grid">
+        <template x-for="item in legends[selectedPlot]">
+          <li class="flex items-center border-t border-gray-300"
+              :class="item.excluded && 'opacity-50, line-through'"
+              x-on:click="item.excluded = !item.excluded; updateComparisonView($data)">
+            <span class="inline-block w-4 h-4 mr-2' "
+                  :style="'background-color: ' + item.color"></span>
+            <span x-text="item.label"></span>
+          </li>
+        </template>
+      </ul>
     </div>
     <div class="border-t border-gray-300 p-4"
          x-show="selectedSources.length > 0">

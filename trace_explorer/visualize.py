@@ -354,13 +354,13 @@ def compare_datasets(tsne: pd.DataFrame, path: str,
                      labels_source: np.ndarray, clusters_source: np.ndarray,
                      cluster_labels_source: np.ndarray,
                      labels_auto: np.ndarray, clusters_auto: np.ndarray,
-                     cluster_labels_auto: np.ndarray):
+                     cluster_labels_auto: np.ndarray, show_legend: bool = True):
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 20))
 
     lgd1 = _plot_clusters(ax1, tsne, labels_source, clusters_source,
-                          cluster_labels_source)
+                          cluster_labels_source, show_legend=show_legend)
     lgd2 = _plot_clusters(ax2, tsne, labels_auto, clusters_auto,
-                          cluster_labels_auto)
+                          cluster_labels_auto, show_legend=show_legend)
 
     plt.savefig(path, bbox_extra_artists=(lgd1, lgd2),
                 bbox_inches='tight')

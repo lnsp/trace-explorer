@@ -161,6 +161,9 @@ def compare_with_params():
     perplexity = float(payload['perplexity'])
     iterations = int(payload['iterations'])
     excluded_columns = payload['exclude']
+    hidden_in_overview = payload['hidden']['overview']
+    hidden_in_clustersall = payload['hidden']['clusters_all']
+    skip_inspect_clusters = payload['skipInspectClusters']
 
     # create temporary directory
     tempdir = tempfile.mkdtemp()
@@ -169,11 +172,12 @@ def compare_with_params():
     datasets = [pd.read_parquet(s) for s in sources]
     overview_path = os.path.join(tempdir, 'overview.png')
     cluster_path = os.path.join(tempdir, 'cluster_%s.png')
-    n_clusters, cluster_path_set = compare.by_limiting_columns(
+    n_clusters, cluster_path_set, legend_overview, legend_clustersall = compare.by_limiting_columns(
         datasets, excluded_columns, overview_path,
         iterations, perplexity, sources, threshold,
         cluster_path=cluster_path, separate_overview=True,
-        cluster_subplots=False, cluster_figsize=(10, 10))
+        cluster_subplots=False, cluster_figsize=(10, 10), show_legend=False, skip_inspect_clusters=skip_inspect_clusters,
+        skip_overview_clusters=set(hidden_in_overview), skip_clustersall_clusters=set(hidden_in_clustersall))
 
     # read pngs into base64
     response = {}
@@ -181,13 +185,18 @@ def compare_with_params():
         response['overview'] = b64encode(f.read()).decode('utf-8')
     with open(cluster_path % 'all', 'rb') as f:
         response['clusters_all'] = b64encode(f.read()).decode('utf-8')
-    response['clusters'] = []
-    for i in range(n_clusters):
-        cluster_data = {}
-        for (plot_type, path) in cluster_path_set[i].items():
-            with open(path, 'rb') as f:
-                cluster_data[plot_type] = b64encode(f.read()).decode('utf-8')
-        response['clusters'].append(cluster_data)
+    if not skip_inspect_clusters:
+        response['clusters'] = []
+        for i in range(n_clusters):
+            cluster_data = {}
+            for (plot_type, path) in cluster_path_set[i].items():
+                with open(path, 'rb') as f:
+                    cluster_data[plot_type] = b64encode(f.read()).decode('utf-8')
+            response['clusters'].append(cluster_data)
+    response['legends'] = {
+        'overview': legend_overview,
+        'clusters_all': legend_clustersall,
+    }
     return response
 
 
@@ -196,6 +205,7 @@ def visualize_with_params():
     # get form input params
     payload = request.get_json()
 
+    skip_inspect = payload['skipInspectClusters']
     source = payload['source']
     threshold = float(payload['threshold'])
     perplexity = float(payload['perplexity'])
@@ -231,7 +241,7 @@ def visualize_with_params():
     png_data = b64encode(png_binary_data).decode('utf-8')
 
     response = {'data': png_data, 'legend': {'colors': lgd_colors, 'labels': cluster_labels, 'indices': clusters.tolist()}, 'clusters': []}
-    if not payload['skipInspectClusters']:
+    if not skip_inspect:
         # do cluster inspection
         tmppath = tempfile.mkdtemp('extra_plots') + "/" + "%s.png"
         cluster_paths = visualize.inspect_clusters(df, df_pcad, df_tsne,

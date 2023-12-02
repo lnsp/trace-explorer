@@ -27,7 +27,11 @@ def by_limiting_columns(
         highlight_path='highlight.pdf',
         highlight_labels=[],
         cachekey=None,
-        legendtitle=None) -> int:
+        legendtitle=None,
+        show_legend: bool = True,
+        skip_inspect_clusters: bool = False,
+        skip_overview_clusters: set[int] = (),
+        skip_clustersall_clusters: set[int] = ()) -> int:
     """
     Compares two datasets (called superset and subset) by restricting
     the column space to the subset columns. Returns number of clusters.
@@ -71,24 +75,33 @@ def by_limiting_columns(
                                  clusters_auto, labels_auto,
                                  top_n_columns=cluster_top_n)
 
+    legend_source = {
+        "colors": visualize.get_legend_colors(clusters_source),
+        "labels": cluster_labels_source,
+        "indices": clusters_source.tolist(),
+    }
+    legend_auto = {
+        "colors": visualize.get_legend_colors(clusters_auto),
+        "labels": cluster_labels_auto,
+        "indices": clusters_auto.tolist(),
+    }
     if separate_overview:
         visualize.visualize(tsne, labels_source, clusters_source,
                             cluster_labels_source, path, figsize=figsize,
-                            legend=(1.04, 0.5), legendloc='center left',
-                            legendtitle=legendtitle)
+                            legend=None, skip_labels=skip_overview_clusters)
         visualize.visualize(tsne, labels_auto, clusters_auto,
                             cluster_labels_auto, cluster_path % 'all',
-                            figsize=figsize,
-                            legend=(1.04, 0.5), legendloc='center left')
+                            figsize=figsize, legend=None, skip_labels=skip_clustersall_clusters)
     else:
         visualize.compare_datasets(
             tsne, path,
             labels_source, clusters_source,
             cluster_labels_source,
             labels_auto, clusters_auto,
-            cluster_labels_auto)
-    if cluster_path is None:
-        return
+            cluster_labels_auto,
+            show_legend=show_legend)
+    if cluster_path is None or (skip_inspect_clusters):
+        return 0, [], legend_source, legend_auto
 
     generated_cluster_plots = visualize.inspect_clusters(concatenated, pcad, tsne,
                                cluster_figsize,
@@ -101,7 +114,7 @@ def by_limiting_columns(
             highlight_path, highlight_clusters,
             clusters_auto, highlight_labels, labels_auto)
 
-    return len(cluster_labels_auto), generated_cluster_plots
+    return len(cluster_labels_auto), generated_cluster_plots, legend_source, legend_auto
 
 
 def by_imputing_columns(superset: pd.DataFrame, subset: pd.DataFrame,
