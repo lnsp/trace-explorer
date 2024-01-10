@@ -1,6 +1,6 @@
 # Do web stuff here
 import os
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, g
 import pandas as pd
 import glob
 import pdf2image
@@ -21,7 +21,6 @@ data_directory = os.path.curdir
 data_buckets = {}
 matplotlib.use('agg')
 
-
 @app.route("/")
 def show_index():
     return render_template('index.html', active=None)
@@ -34,16 +33,16 @@ def show_convert_form():
 
 @app.route('/visualize', methods=['GET'])
 def show_visualize_form():
-    return render_template('visualize.html', active='visualize')
+    return render_template('visualize.html', active='visualize', readonly=app.config['READONLY'])
 
 
 @app.route('/compare', methods=['GET'])
 def show_compare_form():
-    return render_template('compare.html', active='compare')
+    return render_template('compare.html', active='compare', readonly=app.config['READONLY'])
 
 @app.route('/preprocess', methods=['GET'])
 def show_preprocess_form():
-    return render_template('preprocess.html', active='preprocess')
+    return render_template('preprocess.html', active='preprocess', readonly=app.config['READONLY'])
 
 
 @app.route('/describe_source_columns', methods=['POST'])
@@ -65,6 +64,9 @@ def describe_source_columns():
 
 @app.route('/preprocess_source', methods=['POST'])
 def preprocess_source():
+    if present_mode:
+        return {}
+
     source = request.form['source']
     query = request.form['query']
     copy = request.form['copy'] == 'true'
@@ -261,11 +263,11 @@ def open_browser(url):
     webbrowser.open(url)
 
 
-def serve(dir, host, port):
-
+def serve(dir, host, port, present=False):
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.ERROR)
 
+    app.config.update(READONLY=present)
     if not os.getenv('NOBROWSER'):
         threading.Timer(1, open_browser, ['http://%s:%d' % (host, port)]).start()
     app.run(host=host, port=port)

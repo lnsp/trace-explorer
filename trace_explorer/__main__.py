@@ -192,6 +192,8 @@ parser_web.add_argument('--host', default='localhost',
                         help='host address to listen on')
 parser_web.add_argument('--port', default=5000, type=int,
                         help='port to listen on')
+parser_web.add_argument('--present', default=False,
+                        help='enables presentation mode', type=bool)
 
 parser_agg = subparsers.add_parser('aggregate')
 parser_agg.add_argument('--source', required=True,
@@ -360,7 +362,7 @@ def main():
         df.to_parquet(args.output)
     elif args.action == 'web':
         # start web service
-        web.serve(args.dir, args.host, args.port)
+        web.serve(args.dir, args.host, args.port, present=args.present)
 
 
 if __name__ == "__main__":

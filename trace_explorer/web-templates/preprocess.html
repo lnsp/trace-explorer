@@ -14,6 +14,12 @@
               class="border border-gray-900 h-8 px-2 w-full text-sm">
       </select>
     </div>
+    <div class="flex flex-col gap-4 flex-grow relative">
+    {% if readonly %}
+    <div class="absolute t-0 h-full w-full backdrop-blur-sm border border-black flex p-4 text-center place-items-center place-content-center">
+      <span>Querying datasets is disabled in presentation mode.</span>
+    </div>
+    {% endif %}
     <div class="flex gap-2 items-center text-md font-medium">
       <label for="query">Query</label>
     </div>
@@ -76,6 +82,7 @@
                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
         </svg>
       </button>
+    </div>
     </div>
   </form>
 </div>
