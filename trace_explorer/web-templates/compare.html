@@ -141,7 +141,7 @@
   }
 "
      x-init="listSources($data)">
-  <div class="p-4 border-r border-gray-300 shrink-0 w-80">
+  <div class="p-4 border-r border-gray-300 shrink-0 w-96">
     <form class="flex flex-col gap-4 h-full"
           @submit.prevent="updateComparisonView($data)">
       <div class="flex gap-2 items-center text-md font-medium">
@@ -185,9 +185,9 @@
                min="0.01"
                max="50"
                value="20">
-        <div id="threshold-value"
-             class="w-12 h-6 p-1 border border-black flex items-center text-sm"
-             x-text="threshold"></div>
+        <input type="number" id="threshold-value"
+             class="w-16 h-6 p-1 border border-black flex items-center text-sm appearance-none"
+             x-model="threshold">
       </div>
       <div class="flex items-center gap-2">
         <label for="perplexity-slider"
@@ -201,9 +201,9 @@
                min="0.01"
                max="100"
                value="30">
-        <div id="perplexity-value"
-             class="w-12 h-6 p-1 border border-black flex items-center text-sm"
-             x-text="perplexity"></div>
+        <input type="number" id="perplexity-value"
+             class="w-16 h-6 p-1 border border-black flex items-center text-sm appearance-none"
+             x-model="perplexity">
       </div>
       <div class="flex items-center gap-2">
         <label for="iterations-slider"
@@ -216,9 +216,9 @@
                min="500"
                max="5000"
                value="2000">
-        <div id="iterations-value"
-             class="w-12 h-6 p-1 border border-black flex items-center text-sm"
-             x-text="iterations"></div>
+        <input type="number" id="iterations-value"
+             class="w-16 h-6 p-1 border border-black flex items-center text-sm appearance-none"
+             x-model="iterations">
       </div>
       <div class="flex gap-2 items-center">
         <button role="submit"
