@@ -9,8 +9,9 @@ import matplotlib.colors as pltc
 import numpy as np
 import pandas as pd
 import struct
+import threading
+from trace_explorer import cache
 from sklearn import preprocessing, decomposition, manifold, cluster, ensemble
-
 
 def numeric_subset(df: pd.DataFrame):
     """
@@ -23,7 +24,7 @@ def numeric_subset(df: pd.DataFrame):
     return df[numeric_columns]
 
 
-def compute_pca(df: pd.DataFrame, variance_ratio=0.95, print_components=True, hashsum=None):
+def compute_pca(df: pd.DataFrame, variance_ratio=0.95, print_components=True, hashsum=None, cache_manager=cache.default):
     """
     Apply standard scaling and PCA decomposition to the given dataset
     while retaining variance by at least the specified ratio.
@@ -31,7 +32,7 @@ def compute_pca(df: pd.DataFrame, variance_ratio=0.95, print_components=True, ha
 
     # Check local dir
     if hashsum:
-        obj = _restore_from_cache('%s.pca.gz' % hashsum)
+        obj = cache_manager.restore('%s.pca.gz' % hashsum)
         if obj is not None:
             return pd.DataFrame(data=obj, index=df.index)
 
@@ -53,13 +54,13 @@ def compute_pca(df: pd.DataFrame, variance_ratio=0.95, print_components=True, ha
 
     # Attempt to store in cache
     if hashsum:
-        _store_in_cache(X, '%s.pca.gz' % hashsum)
+        cache_manager.store(X, '%s.pca.gz' % hashsum)
 
     return pd.DataFrame(data=X, index=df.index)
 
 
 def compute_tsne(df: pd.DataFrame, subset_idx: np.ndarray,
-                 perplexity=30, n_iter=5000, hashsum=None) -> pd.DataFrame:
+                 perplexity=30, n_iter=5000, hashsum=None, cache_manager=cache.default) -> pd.DataFrame:
     """
     Compute a 2-dimensional embedding of the given subset of data.
     """
@@ -71,7 +72,7 @@ def compute_tsne(df: pd.DataFrame, subset_idx: np.ndarray,
 
     # Check local dir
     if hashsum:
-        obj = _restore_from_cache('%s.%s.%d.tsne.gz' % (hashsum, perplexity_key, n_iter))
+        obj = cache_manager.restore('%s.%s.%d.tsne.gz' % (hashsum, perplexity_key, n_iter))
         if obj is not None:
             return pd.DataFrame(data=obj, index=filtered_idx)
 
@@ -80,40 +81,22 @@ def compute_tsne(df: pd.DataFrame, subset_idx: np.ndarray,
                       init='pca').fit_transform(df[df.index.isin(subset_idx)])
     # Attempt to store in cache
     if hashsum:
-        _store_in_cache(X, '%s.%s.%d.tsne.gz' % (hashsum,
+        cache_manager.store(X, '%s.%s.%d.tsne.gz' % (hashsum,
                                                  perplexity_key,
                                                  n_iter))
 
     return pd.DataFrame(data=X, index=filtered_idx)
 
 
-def _restore_from_cache(path):
-    try:
-        obj = joblib.load(os.path.join('.cache', path))
-        print('Restored %s from cache' % path)
-        return obj
-    except Exception:
-        return None
-
-
-def _store_in_cache(obj, path):
-    try:
-        if not os.path.exists('.cache'):
-            os.mkdir('.cache')
-        joblib.dump(obj, os.path.join('.cache', path))
-    except Exception:
-        print('Could not cache %s' % path)
-
-
 def compute_clusters(df: pd.DataFrame, subset_idx: np.ndarray,
-                     threshold=50, hashsum=None) -> tuple[np.ndarray, np.ndarray]:
+                     threshold=50, hashsum=None, cache_manager=cache.default) -> tuple[np.ndarray, np.ndarray]:
     """
     Find clusters using ward-linkage hierarchical clustering and
     returns a list of clusters and labels.
     """
     threshold_key = struct.pack('f', threshold).hex()
     if hashsum:
-        obj = _restore_from_cache('%s.%s.clusters.gz' % (hashsum, threshold_key))
+        obj = cache_manager.restore('%s.%s.clusters.gz' % (hashsum, threshold_key))
         if obj is not None:
             clusters, labels = obj
             return clusters, labels
@@ -126,7 +109,7 @@ def compute_clusters(df: pd.DataFrame, subset_idx: np.ndarray,
     clusters = np.unique(labels)
 
     if hashsum:
-        _store_in_cache((clusters, labels), '%s.%s.clusters.gz' % (hashsum, threshold_key))
+        cache_manager.store((clusters, labels), '%s.%s.clusters.gz' % (hashsum, threshold_key))
 
     return clusters, labels
 

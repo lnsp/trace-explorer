@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from trace_explorer import visualize
+from trace_explorer import visualize, cache
 import sklearn.impute
 from sklearn.experimental import enable_iterative_imputer
 import itertools
