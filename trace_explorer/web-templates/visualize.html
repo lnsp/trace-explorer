@@ -80,8 +80,9 @@
             title: `Cluster ${i}`,
             subplots: [
               { title: 'Overview', content: response.clusters[i].cluster },
-              { title: 'Traits', content: response.clusters[i].traits },
-              { title: 'Traits (PCA)', content: response.clusters[i].traits_pca },
+              { title: 'Traits (Median)', content: response.clusters[i].traits },
+              { title: 'Traits (Mean)', content: response.clusters[i].traits_mean },
+              { title: 'Traits (post-PCA)', content: response.clusters[i].traits_pca },
             ]
           });
         }

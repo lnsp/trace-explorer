@@ -306,10 +306,14 @@ def _visualize_traits_grouped_by_pca(
 
 def _visualize_traits_as_barchart(
         ax: plt.Axes, df: pd.DataFrame,
-        labels: np.ndarray, label: int):
+        labels: np.ndarray, label: int, measure='median'):
     cols = sorted(df.columns.to_list())
-    baseline = df[cols].median(axis=0).to_numpy()
-    target = df[cols][labels == label].median(axis=0).to_numpy()
+    if measure == 'median':
+        baseline = df[cols].median(axis=0).to_numpy()
+        target = df[cols][labels == label].median(axis=0).to_numpy()
+    elif measure == 'mean':
+        baseline = df[cols].mean(axis=0).to_numpy()
+        target = df[cols][labels == label].mean(axis=0).to_numpy()
     # target_min = df[cols][labels == label].min(axis=0).to_numpy()
     # target_max = df[cols][labels == label].max(axis=0).to_numpy()
     # target_err = np.abs(np.array([target - target_min, target - target_max]))
@@ -384,14 +388,16 @@ def inspect_clusters(
             fig = plt.figure(figsize=figsize)
 
             # Generate label graph
-            gs = fig.add_gridspec(3, 1)
+            gs = fig.add_gridspec(4, 1)
             ax1 = fig.add_subplot(gs[0, 0])
             ax2 = fig.add_subplot(gs[1, 0])
             ax3 = fig.add_subplot(gs[2, 0])
+            ax4 = fig.add_subplot(gs[3, 0])
         else:
             fig1, ax1 = plt.subplots(figsize=figsize)
             fig2, ax2 = plt.subplots(figsize=figsize)
             fig3, ax3 = plt.subplots(figsize=figsize)
+            fig4, ax4 = plt.subplots(figsize=figsize)
 
         labels_iter = (1 if labels[j] == clusters[i] else 0
                        for j in range(len(labels)))
@@ -402,25 +408,30 @@ def inspect_clusters(
         lgd1 = _plot_clusters(ax1, embedding, labels_local,
                        clusters_local, description_local)
         lgd2 = _visualize_traits_as_barchart(ax2, original,
-                                             labels, clusters[i])
-        lgd3 = _visualize_traits_grouped_by_pca(ax3, original, pcad,
+                                             labels, clusters[i], measure='median')
+        lgd3 = _visualize_traits_as_barchart(ax3, original,
+                                             labels, clusters[i], measure='mean')
+        lgd4 = _visualize_traits_grouped_by_pca(ax4, original, pcad,
                                                 labels, clusters[i])
 
         if as_subplots:
             plot_paths[i] = cluster_path % i
-            plt.savefig(plot_paths[i], bbox_extra_artists=(lgd1, lgd2, lgd3),
+            plt.savefig(plot_paths[i], bbox_extra_artists=(lgd1, lgd2, lgd3, lgd4),
                         bbox_inches='tight')
             plt.close(fig)
         else:
             plot_paths[i] = {
                 'cluster': cluster_path % ('%d_scatterplot' % i),
                 'traits': cluster_path % ('%d_traits' % i),
+                'traits_mean': cluster_path % ('%d_traits_mean' % i),
                 'traits_pca': cluster_path % ('%d_traits_pca' % i),
             }
             fig1.savefig(plot_paths[i]['cluster'], bbox_inches='tight', bbox_extra_artists=(lgd1,))
             plt.close(fig1)
             fig2.savefig(plot_paths[i]['traits'], bbox_inches='tight', bbox_extra_artists=(lgd2,))
             plt.close(fig2)
-            fig3.savefig(plot_paths[i]['traits_pca'], bbox_inches='tight', bbox_extra_artists=(lgd3,))
+            fig3.savefig(plot_paths[i]['traits_mean'], bbox_inches='tight', bbox_extra_artists=(lgd3,))
             plt.close(fig3)
+            fig4.savefig(plot_paths[i]['traits_pca'], bbox_inches='tight', bbox_extra_artists=(lgd4,))
+            plt.close(fig4)
     return plot_paths
