@@ -23,12 +23,12 @@ matplotlib.use('agg')
 
 @app.route("/")
 def show_index():
-    return render_template('index.html', active=None)
+    return render_template('index.html', active=None, readonly=app.config['READONLY'])
 
 
 @app.route('/convert', methods=['GET'])
 def show_convert_form():
-    return render_template('convert.html', active='convert')
+    return render_template('convert.html', active='convert', readonly=app.config['READONLY'])
 
 
 @app.route('/visualize', methods=['GET'])
