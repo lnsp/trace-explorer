@@ -123,7 +123,7 @@
     excludedColumns: [],
     clusters: [],
     excludedClusters: [],
-    threshold: 20,
+    threshold: 50,
     perplexity: 30,
     iterations: 2000,
     inflight: false,
@@ -175,11 +175,11 @@
                x-model="threshold"
                class="flex-grow text-sm"
                id="threshold-slider"
-               step="0.01"
-               min="0.01"
-               max="50"
-               value="20">
-        <input type="number" id="threshold-value"
+               step="0.1"
+               min="0.1"
+               max="100"
+               value="50">
+        <input type="number" id="threshold-value" step="0.1"
              class="w-16 h-6 p-1 border border-black flex items-center text-sm"
              x-model="threshold">
       </div>
@@ -191,11 +191,11 @@
                id="perplexity-slider"
                x-model="perplexity"
                class="flex-grow text-sm"
-               step="0.01"
-               min="0.01"
+               step="0.1"
+               min="0.1"
                max="100"
                value="30">
-        <input type="number" id="perplexity-value"
+        <input type="number" id="perplexity-value" step="0.1"
              class="w-16 h-6 p-1 border border-black flex items-center text-sm"
              x-model="perplexity">
       </div>
